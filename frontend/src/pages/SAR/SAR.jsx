@@ -36,7 +36,20 @@ const SAR = () => {
       <h2 style={{ textAlign: "center", margin: "16px 0" }}>SAR Image Viewer & Feature Extractor</h2>
 
       <div className="card sar-card" style={{ padding: 16, marginBottom: 16 }}>
-        <input type="file" accept=".tif,.tiff,.ntf" onChange={onUpload} />
+        <div className="upload-section">
+          <div className="drop-zone" onClick={() => document.getElementById('sar-file-input').click()}>
+            <input
+              id="sar-file-input"
+              type="file"
+              accept=".tif,.tiff,.ntf"
+              onChange={onUpload}
+              style={{ display: 'none' }}
+            />
+            <div className="upload-prompt">
+              <p>🛰️ Drag & drop TIF/NTF file here or click to browse</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -82,5 +95,6 @@ const SAR = () => {
 };
 
 export default SAR;
+
 
 

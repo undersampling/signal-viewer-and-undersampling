@@ -131,8 +131,19 @@ const Doppler = () => {
       </h2>
 
       <div className="card doppler-card" style={{ padding: 16, marginBottom: 16 }}>
-        <div style={{ marginBottom: 8 }}>
-          <input type="file" accept="audio/wav" onChange={onUpload} />
+        <div className="upload-section">
+          <div className="drop-zone" onClick={() => document.getElementById('doppler-file-input').click()}>
+            <input
+              id="doppler-file-input"
+              type="file"
+              accept="audio/wav"
+              onChange={onUpload}
+              style={{ display: 'none' }}
+            />
+            <div className="upload-prompt">
+              <p>🎵 Drag & drop WAV file here or click to browse</p>
+            </div>
+          </div>
         </div>
         <div className="grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
           <div className="field">
@@ -217,5 +228,6 @@ const Doppler = () => {
 };
 
 export default Doppler;
+
 
 
