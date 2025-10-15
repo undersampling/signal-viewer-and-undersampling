@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Plot from "react-plotly.js";
 import { apiService } from "../services/api"; // Needs apiService for fetching chunks
-
+import "./Audio.css";
 function AudioDisplay({ analysis, audioSrc, setError }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
@@ -68,7 +68,7 @@ function AudioDisplay({ analysis, audioSrc, setError }) {
           Restart Scroll
         </button>
       </div>
-
+      {/* <p className ="">amplitude</p> */}
       {waveform && (
         <Plot
           data={[

@@ -46,3 +46,64 @@
   color: #666;
   margin-top: 5px;
 }
+
+/* Add to Drone.css */
+
+.comparison-controls {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.comparison-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.comparison-side {
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 8px;
+  background: #f9f9f9;
+}
+
+.comparison-side h3 {
+  margin-top: 0;
+  text-align: center;
+  color: #333;
+}
+
+.resample-control {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 6px;
+}
+
+.resample-control label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.resample-control input[type="range"] {
+  width: 50%;
+  cursor: pointer;
+}
+
+/* Responsive: Stack on mobile */
+@media (max-width: 768px) {
+  .comparison-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
