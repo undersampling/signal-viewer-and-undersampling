@@ -39,6 +39,8 @@ function AudioDisplay({ analysis, audioSrc, setError }) {
     return () => clearInterval(intervalRef.current);
   }, [isPlaying, position, analysis, setError]);
 
+  //           resampleRate // 🆕 Pass resampleRate to backend
+  // }, [isPlaying, position, analysis, setError, resampleRate]);
   const handleStartPause = () => setIsPlaying(!isPlaying);
 
   const handleRestart = () => {

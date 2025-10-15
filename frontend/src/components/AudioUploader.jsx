@@ -15,7 +15,6 @@ function AudioUploader({ onFileSelect, onAnalyze, isLoading }) {
     onFileSelect(file);
   };
 
-  // ... (all other handler functions like handleDrop, handleClick, etc. are the same)
   const handleDragEnter = (e) => {
     e.preventDefault();
     e.stopPropagation();

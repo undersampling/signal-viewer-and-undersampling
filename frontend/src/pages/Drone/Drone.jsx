@@ -43,7 +43,7 @@ const Drone = () => {
   };
 
   return (
-    <>
+    <div className="page-container">
       <h1 className="page-title">🚁 Drone Sound Detector</h1>
 
       <div className="upload-section">
@@ -124,7 +124,7 @@ const Drone = () => {
           )}
         </div>
       )}
-    </>
+    </div>
   );
 };
 
