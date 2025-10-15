@@ -28,4 +28,33 @@ export const apiService = {
       new_sr: newSr,
     });
   },
+
+  // Doppler endpoints
+  dopplerUpload: (dataUri) => {
+    return apiClient.post("/doppler/upload/", { contents: dataUri });
+  },
+  dopplerGenerate: ({ dataUri, vStart, vEnd, fSource }) => {
+    return apiClient.post("/doppler/generate/", {
+      contents: dataUri,
+      v_start: vStart,
+      v_end: vEnd,
+      f_source: fSource,
+    });
+  },
+  dopplerSimulate: ({ dataUri, vStart, vEnd, fSource }) => {
+    return apiClient.post("/doppler/simulate/", {
+      contents: dataUri,
+      v_start: vStart,
+      v_end: vEnd,
+      f_source: fSource,
+    });
+  },
+  dopplerPredict: (dataUri) => {
+    return apiClient.post("/doppler/predict/", { contents: dataUri });
+  },
+
+  // SAR endpoints
+  sarUpload: (dataUri) => {
+    return apiClient.post("/sar/upload/", { contents: dataUri });
+  },
 };

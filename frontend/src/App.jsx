@@ -5,6 +5,8 @@ import Sidebar from "./components/Sidebar";
 // import Home from "./pages/Home";
 import "./App.css";
 import Drone from "./pages/Drone/Drone";
+import Doppler from "./pages/Doppler/Doppler";
+import SAR from "./pages/SAR/SAR";
 import Human from "./pages/Human";
 
 const App = () => {
@@ -38,10 +40,8 @@ const App = () => {
             <Route path="/drone" element={<Drone />} />
 
             <Route path="/human" element={<Human />} />
-            <Route
-              path="/sound/doppler"
-              element={<div>EEG Page - Coming Soon</div>}
-            />
+            <Route path="/doppler" element={<Doppler />} />
+            <Route path="/sar" element={<SAR />} />
             <Route
               path="/sound/soar"
               element={<div>EEG Page - Coming Soon</div>}
