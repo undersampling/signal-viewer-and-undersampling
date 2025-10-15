@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { apiService } from "../../services/api";
-import "./Drone.css";
-import AudioUploader from "../../components/AudioUploader";
-import DisplayAudio from "../../components/DisplayAudio";
+import { apiService } from "../services/api";
+// import "./Human.css";
+import AudioUploader from "../components/AudioUploader";
+import DisplayAudio from "../components/DisplayAudio";
 
-const Drone = () => {
+const Human = () => {
   const [file, setFile] = useState(null);
   const [audioSrc, setAudioSrc] = useState(null);
   const [analysis, setAnalysis] = useState(null);
@@ -23,6 +23,8 @@ const Drone = () => {
     setIsLoading(true);
     setError("");
     try {
+      // 2. Changed the API call to a new function for human sound
+      // Make sure you create this function in your api.js service file!
       const response = await apiService.detectDrone(file);
       setAnalysis(response.data);
     } catch (err) {
@@ -34,7 +36,8 @@ const Drone = () => {
 
   return (
     <>
-      <h1 className="page-title">🚁 Drone Sound Detector</h1>
+      {/* 3. Changed the page title */}
+      <h1 className="page-title">🗣️ Human Sound Analysis</h1>
 
       <div className="upload-section">
         <AudioUploader
@@ -48,14 +51,7 @@ const Drone = () => {
 
       {analysis && (
         <div className="results-container">
-          <div
-            className={`alert ${
-              analysis.prediction === "DRONE" ? "success" : "info"
-            }`}
-          >
-            <h3>Prediction: {analysis.prediction}</h3>
-          </div>
-
+          {/* 4. REMOVED the prediction display section */}
           <DisplayAudio
             analysis={analysis}
             audioSrc={audioSrc}
@@ -67,4 +63,4 @@ const Drone = () => {
   );
 };
 
-export default Drone;
+export default Human;

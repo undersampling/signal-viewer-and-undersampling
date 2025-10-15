@@ -49,6 +49,15 @@ const Navbar = () => {
           </li>
           <li>
             <Link
+              to="/human"
+              className={`nav-link ${isActive("/drone")}`}
+              onClick={closeMenu}
+            >
+              <i className="fa-solid fa-satellite-dish"></i> Human
+            </Link>
+          </li>
+          <li>
+            <Link
               to="/eeg"
               className={`nav-link ${isActive("/eeg")}`}
               onClick={closeMenu}
@@ -90,3 +99,5 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
+

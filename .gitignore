@@ -44,3 +44,4 @@ yarn-error.log*
 
 # Ignore the large ML model folder inside the backend
 backend/api/views/drone_model/
+olddj.py

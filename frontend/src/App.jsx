@@ -1,29 +1,56 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
-import Home from "./pages/Home";
-import Drone from "./pages/Drone/Drone";
+import React from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Sidebar from "./components/Sidebar";
+// import Home from "./pages/Home";
 import "./App.css";
+import Drone from "./pages/Drone/Drone";
+import Human from "./pages/Human";
 
-function App() {
+const App = () => {
   return (
     <Router>
       <div className="app-container">
         <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/drone" element={<Drone />} />
-          {/* Add other routes here */}
-          <Route path="/eeg" element={<div>EEG Page - Coming Soon</div>} />
-          <Route path="/ecg" element={<div>ECG Page - Coming Soon</div>} />
-          <Route path="/sar" element={<div>SAR Page - Coming Soon</div>} />
-          <Route
-            path="/doppler"
-            element={<div>Doppler Page - Coming Soon</div>}
-          />
-        </Routes>
+
+        <div>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <div className="home-container">
+                  <h1>Welcome to the Signal Viewer Dashboard</h1>
+                  <p>
+                    Select a tool from the navigation bar above to begin
+                    analyzing signals.
+                  </p>
+                </div>
+              }
+            />
+            <Route
+              path="/medical/ecg"
+              element={<div>EEG Page - Coming Soon</div>}
+            />
+            <Route
+              path="/medical/eeg"
+              element={<div>EEG Page - Coming Soon</div>}
+            />
+            <Route path="/drone" element={<Drone />} />
+
+            <Route path="/human" element={<Human />} />
+            <Route
+              path="/sound/doppler"
+              element={<div>EEG Page - Coming Soon</div>}
+            />
+            <Route
+              path="/sound/soar"
+              element={<div>EEG Page - Coming Soon</div>}
+            />
+          </Routes>
+        </div>
       </div>
     </Router>
   );
-}
+};
 
 export default App;
