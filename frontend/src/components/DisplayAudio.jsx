@@ -95,7 +95,7 @@ function AudioDisplay({ analysis, audioSrc, setError }) {
         />
       )}
 
-      {/* Plot 2: Frequency vs. Time */}
+      {/* Plot 2: Frequency vs. Time
       {analysis.freq_time_data && (
         <Plot
           data={[
@@ -118,30 +118,59 @@ function AudioDisplay({ analysis, audioSrc, setError }) {
           style={{ width: "100%", height: "400px" }}
           config={{ responsive: true }}
         />
-      )}
+      )} */}
 
       {/* Plot 3: Spectrogram */}
-      {analysis && (
-        <Plot
-          data={[
-            {
-              ...analysis.spectrogram,
-              type: "heatmap",
-              colorscale: "Viridis",
-            },
-          ]}
-          layout={{
-            title: "Spectrogram",
-            template: "plotly_white",
-            margin: { l: 60, r: 20, t: 50, b: 60 },
-            xaxis: { title: "Time (s)" },
-            yaxis: { title: "Frequency (Hz)", type: "log" },
-          }}
-          style={{ width: "100%", height: "400px" }}
-          config={{ responsive: true }}
-        />
-      )}
-    </div>
+{analysis?.spectrogram?.z?.length > 0 && (
+  <Plot
+    data={[
+      {
+        z: analysis.spectrogram.z,
+        x: analysis.spectrogram.x,
+        y: analysis.spectrogram.y,
+        type: "heatmap",
+        colorscale: "Magma", // Retaining Magma colorscale as it matches the image
+        zmin: -80, // Matches backend clipping range
+        zmax: 0,
+        reversescale: false,
+        colorbar: {
+          title: "Amplitude (dB)",
+          titleside: "right",
+          tickvals: [-80, -60, -40, -20, 0],
+        },
+      },
+    ]}
+    layout={{
+      title: {
+        text: "Spectrogram (Time vs Frequency)",
+        font: { size: 16, color: "#fff" },
+      },
+      xaxis: {
+        title: { text: "Time (s)", font: { color: "#fff" } },
+        tickfont: { color: "#ccc" },
+        gridcolor: "rgba(255, 255, 255, 0)", // No grid lines, consistent with image
+      },
+      yaxis: {
+        title: { text: "Frequency (Hz)", font: { color: "#fff" } },
+        tickfont: { color: "#ccc" },
+        type: "linear", // CHANGED: From "log" to "linear" for a better visual match to the example image
+        autorange: true, // Will automatically set the range based on data from backend (up to 8000 Hz)
+        showgrid: true,
+        gridcolor: "rgba(255, 255, 255, 0)", // No grid lines, consistent with image
+      },
+      margin: { l: 70, r: 40, t: 50, b: 50 },
+      paper_bgcolor: "transparent",
+      plot_bgcolor: "transparent",
+      height: 420,
+    }}
+    config={{
+      responsive: true,
+      displayModeBar: false,
+    }}
+    style={{ width: "100%" }}
+  />
+)}
+</div>
   );
 }
 

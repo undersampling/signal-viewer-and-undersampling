@@ -16,11 +16,6 @@ import librosa
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def downsample_audio(request):
-    """
-    Downsample an uploaded audio file to a specified sample rate.
-    Accepts WAV and MP3 files and a new_rate parameter.
-    Returns both original and downsampled audio as base64-encoded data URIs.
-    """
     try:
         file = request.FILES.get('file')
         new_rate_str = request.data.get('new_rate', '0')
@@ -28,7 +23,6 @@ def downsample_audio(request):
         if not file:
             return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Check if file is WAV or MP3
         file_ext = file.name.lower().split('.')[-1]
         if file_ext not in ['wav', 'mp3']:
             return Response({'error': 'Only WAV and MP3 files are supported.'}, 
@@ -39,31 +33,30 @@ def downsample_audio(request):
         except ValueError:
             return Response({'error': 'Invalid sample rate'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not librosa:
-            return Response({'error': 'Librosa not available for audio processing'}, 
-                          status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # Save uploaded file to a temporary file
         file.seek(0)
         with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_ext}') as tmp_file:
             tmp_file.write(file.read())
             tmp_path = tmp_file.name
         
         try:
-            # Load audio file using librosa (supports both WAV and MP3)
-            samples, rate = librosa.load(tmp_path, sr=None, mono=True)
+            # Load audio (optimize based on format)
+            if file_ext == 'wav':
+                rate, samples = wavfile.read(tmp_path)
+                if len(samples.shape) > 1:
+                    samples = samples[:, 0]  # Convert to mono
+                samples = samples.astype(float) / 32768
+            else:
+                samples, rate = librosa.load(tmp_path, sr=None, mono=True)
             
-            # Validate new sample rate
             if new_rate <= 0:
                 new_rate = rate // 2
             if new_rate >= rate:
                 new_rate = rate
 
-            # Resample the audio using scipy
-            new_length = int(len(samples) * new_rate / rate)
-            new_signal = resample(samples, new_length)
+            # Faster resampling with scipy
+            num_samples = int(len(samples) * new_rate / rate)
+            new_signal = resample(samples, num_samples)
 
-            # Function to convert audio data to base64
             def audio_to_base64(signal, sample_rate):
                 buffer = io.BytesIO()
                 with wave.open(buffer, 'wb') as wf:
@@ -86,7 +79,6 @@ def downsample_audio(request):
             })
         
         finally:
-            # Clean up temporary file
             try:
                 os.unlink(tmp_path)
             except:
@@ -94,5 +86,3 @@ def downsample_audio(request):
             
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
