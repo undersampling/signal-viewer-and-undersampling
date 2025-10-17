@@ -29,7 +29,7 @@ export const apiService = {
     });
   },
 
-  // Doppler endpoints
+  // Doppler
   dopplerUpload: (dataUri) => {
     return apiClient.post("/doppler/upload/", { contents: dataUri });
   },
@@ -53,10 +53,18 @@ export const apiService = {
     return apiClient.post("/doppler/predict/", { contents: dataUri });
   },
 
+  getDopplerWaveformChunk: (fileId, position) => {
+    return apiClient.post("/doppler/waveform-chunk/", {
+      file_id: fileId,
+      position,
+    });
+  },
+
   // SAR endpoints
   sarUpload: (dataUri) => {
     return apiClient.post("/sar/upload/", { contents: dataUri });
   },
+  // downsampling
   downsampleAudio: async (file, newRate) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -78,6 +86,8 @@ export const apiService = {
       throw error;
     }
   },
+
+  // eeg
   eegDemo: () => apiClient.post("/eeg/demo/"),
 
   eegUpload: (file) => {

@@ -1,132 +1,3 @@
-// import React, { useState } from "react";
-// import { apiService } from "../../services/api";
-// import "./Drone.css";
-// import "../../components/Audio.css";
-// import AudioUploader from "../../components/AudioUploader";
-// import DisplayAudio from "../../components/DisplayAudio";
-
-// const Drone = () => {
-//   const [file, setFile] = useState(null);
-//   const [audioSrc, setAudioSrc] = useState(null);
-//   const [analysis, setAnalysis] = useState(null);
-//   const [error, setError] = useState("");
-//   const [isLoading, setIsLoading] = useState(false);
-
-//   //  Comparison
-//   const [showComparison, setShowComparison] = useState(false);
-//   const [resampleRate, setResampleRate] = useState(16000); // default resample rate
-
-//   const handleFileSelected = (selectedFile) => {
-//     setFile(selectedFile);
-//     setAudioSrc(URL.createObjectURL(selectedFile));
-//     setAnalysis(null);
-//     setError("");
-//     setShowComparison(false); // Reset comparison on new file
-//   };
-
-//   const handleAnalyze = async () => {
-//     if (!file) return;
-//     setIsLoading(true);
-//     setError("");
-//     try {
-//       const response = await apiService.detectDrone(file);
-//       setAnalysis(response.data);
-//     } catch (err) {
-//       setError(err.response?.data?.error || "Analysis failed.");
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-
-//   const toggleComparison = () => {
-//     setShowComparison(!showComparison);
-//   };
-
-//   return (
-//     <div className="page-container">
-//       <h1 className="page-title">🚁 Drone Sound Detector</h1>
-
-//       <div className="upload-section">
-//         <AudioUploader
-//           onFileSelect={handleFileSelected}
-//           onAnalyze={handleAnalyze}
-//           isLoading={isLoading}
-//         />
-//       </div>
-
-//       {error && <div className="alert error">{error}</div>}
-
-//       {analysis && (
-//         <div className="results-container">
-//           <div
-//             className={`alert ${
-//               analysis.prediction === "DRONE" ? "success" : "info"
-//             }`}
-//           >
-//             <h3>Prediction: {analysis.prediction}</h3>
-//           </div>
-
-//           {/* 🆕 Comparison Toggle Button */}
-//           <div className="comparison-controls">
-//             <button className="btn btn-secondary" onClick={toggleComparison}>
-//               {showComparison ? "Hide Comparison" : "Show Comparison"}
-//             </button>
-
-//             {/* 🆕 Resample Rate Slider */}
-//             {showComparison && (
-//               <div className="resample-control">
-//                 <label>
-//                   Sample Rate: <strong>{resampleRate} Hz</strong>
-//                 </label>
-//                 <input
-//                   type="range"
-//                   min="8000"
-//                   max="48000"
-//                   step="1000"
-//                   value={resampleRate}
-//                   onChange={(e) => setResampleRate(Number(e.target.value))}
-//                 />
-//               </div>
-//             )}
-//           </div>
-
-//           {/* 🆕 Conditional Rendering: Single or Side-by-Side */}
-//           {!showComparison ? (
-//             // Single display
-//             <DisplayAudio
-//               analysis={analysis}
-//               audioSrc={audioSrc}
-//               setError={setError}
-//             />
-//           ) : (
-//             // Side-by-side comparison
-//             <div className="comparison-container">
-//               <div className="comparison-side">
-//                 <h3>Original Audio</h3>
-//                 <DisplayAudio
-//                   analysis={analysis}
-//                   audioSrc={audioSrc}
-//                   setError={setError}
-//                 />
-//               </div>
-
-//               <div className="comparison-side">
-//                 <h3>Resampled Audio</h3>
-
-//                 <DisplayAudio
-//                   analysis={analysis}
-//                   audioSrc={audioSrc}
-//                   setError={setError}
-//                   resampleRate={resampleRate}
-//                 />
-//               </div>
-//             </div>
-//           )}
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
 import React, { useState, useEffect } from "react";
 import { apiService } from "../../services/api";
 import "./Drone.css"; // Assuming this CSS is relevant
@@ -202,11 +73,11 @@ const Drone = () => {
     try {
       // Use the debounced `resampleRate` for the backend call
       const response = await apiService.downsampleAudio(file, resampleRate);
-      
+
       let data;
       if (response && response.data) {
         data = response.data;
-      } else if (response && typeof response === 'object') {
+      } else if (response && typeof response === "object") {
         data = response;
       } else {
         throw new Error("Invalid response structure");
@@ -214,19 +85,19 @@ const Drone = () => {
 
       // No need to set originalRate here, as it should be set by handleAnalyze
       if (!data.original_rate && data.original_rate !== 0) {
-        console.warn("Original rate not provided in downsample response, assuming it's already known.");
+        console.warn(
+          "Original rate not provided in downsample response, assuming it's already known."
+        );
       }
-      
+
       setDownsampledAudio(data.downsampled_audio);
 
       // Analyze the downsampled audio
       await analyzeDownsampledAudio(data.downsampled_audio);
-
     } catch (err) {
       console.error("Downsampling error:", err);
-      const errorMessage = err.response?.data?.error 
-        || err.message 
-        || "Downsampling failed.";
+      const errorMessage =
+        err.response?.data?.error || err.message || "Downsampling failed.";
       setError(errorMessage);
     } finally {
       setIsDownsampling(false);
@@ -238,7 +109,11 @@ const Drone = () => {
       // Convert data URI to Blob
       const response = await fetch(audioDataUri);
       const blob = await response.blob();
-      const downsampledFile = new File([blob], `downsampled_${resampleRate}.wav`, { type: "audio/wav" });
+      const downsampledFile = new File(
+        [blob],
+        `downsampled_${resampleRate}.wav`,
+        { type: "audio/wav" }
+      );
 
       // Analyze the downsampled file
       const analysisResponse = await apiService.detectDrone(downsampledFile);
@@ -250,12 +125,15 @@ const Drone = () => {
   };
 
   const toggleComparison = () => {
-    if (!showComparison) { // If turning comparison ON
+    if (!showComparison) {
+      // If turning comparison ON
       // Set initial slider value and effective resample rate for the first comparison
-      const initialRate = originalRate > 0 ? Math.min(16000, originalRate) : 16000;
+      const initialRate =
+        originalRate > 0 ? Math.min(16000, originalRate) : 16000;
       setSliderValue(initialRate);
       setResampleRate(initialRate); // This will trigger the downsampling via useEffect
-    } else { // If turning comparison OFF
+    } else {
+      // If turning comparison OFF
       setDownsampledAudio(null);
       setDownsampledAnalysis(null);
     }
@@ -293,8 +171,8 @@ const Drone = () => {
       clearTimeout(handler);
     };
   }, [sliderValue, showComparison, file, resampleRate]); // Dependencies: `sliderValue` is the primary trigger.
-                                                          // `showComparison`, `file`, `resampleRate` are for conditions
-                                                          // and ensuring correct re-evaluation.
+  // `showComparison`, `file`, `resampleRate` are for conditions
+  // and ensuring correct re-evaluation.
 
   return (
     <div className="page-container">
@@ -305,7 +183,8 @@ const Drone = () => {
           onFileSelect={handleFileSelected}
           onAnalyze={handleAnalyze}
           isLoading={isLoading}
-          accept=".wav,.mp3"
+          analyzeButtonText="Detect Drone"
+          // acceptedFormats="audio/wav,mp3"
         />
       </div>
 
@@ -324,15 +203,15 @@ const Drone = () => {
 
           {/* Comparison Toggle Button */}
           <div className="comparison-controls">
-            <button 
-              className="btn btn-secondary" 
+            <button
+              className="btn btn-secondary"
               onClick={toggleComparison}
               disabled={isLoading || isDownsampling} // Disable if initial analysis or downsampling is ongoing
             >
-              {isDownsampling 
-                ? "Processing..." 
-                : showComparison 
-                ? "Hide Comparison" 
+              {isDownsampling
+                ? "Processing..."
+                : showComparison
+                ? "Hide Comparison"
                 : "Show Comparison"}
             </button>
 
@@ -340,13 +219,14 @@ const Drone = () => {
             {showComparison && (
               <div className="resample-control">
                 <label>
-                  Resample Rate: <strong>{sliderValue} Hz</strong> {/* Display the immediate slider value */}
+                  Resample Rate: <strong>{sliderValue} Hz</strong>{" "}
+                  {/* Display the immediate slider value */}
                 </label>
                 <input
                   type="range"
                   min="8000"
                   // Ensure max is never 0; use originalRate if available, otherwise a sensible default (e.g., 48000)
-                  max={originalRate > 0 ? originalRate : 48000} 
+                  max={originalRate > 0 ? originalRate : 48000}
                   step="1000"
                   value={sliderValue} // Slider controls the immediate `sliderValue` state
                   onChange={(e) => setSliderValue(Number(e.target.value))} // Update `sliderValue` on change
@@ -368,7 +248,9 @@ const Drone = () => {
             // Side-by-side comparison
             <div className="comparison-container">
               <div className="comparison-side">
-                <h3>Original Audio ({originalRate > 0 ? originalRate : 'N/A'} Hz)</h3>
+                <h3>
+                  Original Audio ({originalRate > 0 ? originalRate : "N/A"} Hz)
+                </h3>
                 <DisplayAudio
                   analysis={analysis}
                   audioSrc={audioSrc}
@@ -377,7 +259,8 @@ const Drone = () => {
               </div>
 
               <div className="comparison-side">
-                <h3>Downsampled Audio ({resampleRate} Hz)</h3> {/* Display the effective `resampleRate` here */}
+                <h3>Downsampled Audio ({resampleRate} Hz)</h3>{" "}
+                {/* Display the effective `resampleRate` here */}
                 {isDownsampling ? (
                   <div className="loading-spinner">Processing...</div>
                 ) : downsampledAudio && downsampledAnalysis ? (

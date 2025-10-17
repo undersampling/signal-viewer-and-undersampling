@@ -321,9 +321,60 @@ class DroneDetectionView(APIView):
 # ===========================================
 # --- Efficient Incremental Waveform View ---
 # ===========================================
+# class WaveformChunkView(APIView):
+#     parser_classes = (FormParser, MultiPartParser, JSONParser)
+
+
+#     def post(self, request):
+#         file_id = request.data.get('file_id')
+#         position = int(request.data.get('position', 0))
+#         view_seconds = 2.0
+
+#         if not file_id:
+#             return Response({'error': 'No file_id provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             fs = FileSystemStorage(location=settings.TEMP_FILE_ROOT)
+#             if not fs.exists(file_id):
+#                 return Response({'error': 'File not found or expired'}, status=status.HTTP_404_NOT_FOUND)
+
+#             # Fast read (no full decoding)
+#             y, sr = librosa.load(fs.path(file_id), sr=16000, mono=True)
+
+#             window_size = int(view_seconds * sr)
+#             step = int(window_size / 20)
+#             new_position = position + step
+
+#             if new_position + window_size > len(y):
+#                 return Response({'completed': True})
+
+#             end_index = new_position + window_size
+#             chunk = y[new_position:end_index]
+#             start_time = new_position / sr
+#             end_time = start_time + len(chunk) / sr
+#             time_axis = np.linspace(start_time, end_time, len(chunk)).tolist()
+
+#             return Response({
+#                 'completed': False,
+#                 'time': time_axis,
+#                 'amplitude': chunk.tolist(),
+#                 'new_position': new_position,
+#             })
+
+#         except Exception as e:
+#             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+try:
+    from .doppler_views import AUDIO_STORAGE
+except ImportError:
+    AUDIO_STORAGE = {}
+
+# ===========================================
+# --- UNIFIED Waveform Chunk View ---
+# ===========================================
 class WaveformChunkView(APIView):
     parser_classes = (FormParser, MultiPartParser, JSONParser)
-
 
     def post(self, request):
         file_id = request.data.get('file_id')
@@ -334,32 +385,70 @@ class WaveformChunkView(APIView):
             return Response({'error': 'No file_id provided'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            fs = FileSystemStorage(location=settings.TEMP_FILE_ROOT)
-            if not fs.exists(file_id):
-                return Response({'error': 'File not found or expired'}, status=status.HTTP_404_NOT_FOUND)
-
-            # Fast read (no full decoding)
-            y, sr = librosa.load(fs.path(file_id), sr=16000, mono=True)
-
-            window_size = int(view_seconds * sr)
-            step = int(window_size / 20)
-            new_position = position + step
-
-            if new_position + window_size > len(y):
-                return Response({'completed': True})
-
-            end_index = new_position + window_size
-            chunk = y[new_position:end_index]
-            start_time = new_position / sr
-            end_time = start_time + len(chunk) / sr
-            time_axis = np.linspace(start_time, end_time, len(chunk)).tolist()
-
-            return Response({
-                'completed': False,
-                'time': time_axis,
-                'amplitude': chunk.tolist(),
-                'new_position': new_position,
-            })
+            # Check if this is an in-memory audio (Doppler)
+            if file_id in AUDIO_STORAGE:
+                return self._handle_memory_audio(file_id, position, view_seconds)
+            
+            # Otherwise, handle file-based audio (Drone)
+            return self._handle_file_audio(file_id, position, view_seconds)
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _handle_memory_audio(self, file_id, position, view_seconds):
+        """Handle in-memory audio (Doppler generated audio)"""
+        stored = AUDIO_STORAGE[file_id]
+        samples = stored['samples']
+        sr = stored['sr']
+        duration = stored['duration']
+        
+        window_size = int(view_seconds * sr)
+        step = int(window_size / 20)
+        new_position = position + step
+
+        if new_position + window_size > len(samples):
+            return Response({'completed': True})
+
+        end_index = new_position + window_size
+        chunk = samples[new_position:end_index]
+        start_time = new_position / sr
+        end_time = start_time + len(chunk) / sr
+        time_axis = np.linspace(start_time, end_time, len(chunk)).tolist()
+
+        return Response({
+            'completed': False,
+            'time': time_axis,
+            'amplitude': chunk.tolist(),
+            'new_position': new_position,
+        })
+
+    def _handle_file_audio(self, file_id, position, view_seconds):
+        """Handle file-based audio (Drone detection uploaded files)"""
+        fs = FileSystemStorage(location=settings.TEMP_FILE_ROOT)
+        if not fs.exists(file_id):
+            return Response({'error': 'File not found or expired'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Fast read (no full decoding)
+        y, sr = librosa.load(fs.path(file_id), sr=16000, mono=True)
+
+        window_size = int(view_seconds * sr)
+        step = int(window_size / 20)
+        new_position = position + step
+
+        if new_position + window_size > len(y):
+            return Response({'completed': True})
+
+        end_index = new_position + window_size
+        chunk = y[new_position:end_index]
+        start_time = new_position / sr
+        end_time = start_time + len(chunk) / sr
+        time_axis = np.linspace(start_time, end_time, len(chunk)).tolist()
+
+        return Response({
+            'completed': False,
+            'time': time_axis,
+            'amplitude': chunk.tolist(),
+            'new_position': new_position,
+        })
