@@ -9,6 +9,8 @@ import os
 from django.conf import settings
 import math
 from scipy.io import wavfile
+from scipy.signal import resample
+import wave
 
 try:
     import tensorflow as tf
@@ -292,5 +294,3 @@ def predict_doppler(request):
         })
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-

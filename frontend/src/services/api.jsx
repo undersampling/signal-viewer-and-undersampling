@@ -57,4 +57,18 @@ export const apiService = {
   sarUpload: (dataUri) => {
     return apiClient.post("/sar/upload/", { contents: dataUri });
   },
+  downsampleAudio: async (file, newRate) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("new_rate", newRate);
+    try {
+    const response = await axios.post("http://localhost:8000/api/audio/downsample/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Downsampling failed:", error.response?.data || error.message);
+    throw error;
+  }
+    },
 };

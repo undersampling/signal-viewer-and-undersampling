@@ -5,6 +5,7 @@ from django.urls import path
 from .views.doppler_views import generate_doppler, upload_doppler, simulate_passing, predict_doppler
 from .views.sar_views import upload_sar
 from .views.drone_views import DroneDetectionView, WaveformChunkView
+from .views.audio import downsample_audio
 
 urlpatterns = [
     # For the initial upload, prediction, and spectrogram
@@ -18,6 +19,7 @@ urlpatterns = [
     path('doppler/generate/', generate_doppler, name='doppler_generate'),
     path('doppler/simulate/', simulate_passing, name='doppler_simulate'),
     path('doppler/predict/', predict_doppler, name='doppler_predict'),
+    path('audio/downsample/', downsample_audio, name='downsample_audio'),
 
     # SAR endpoints
     path('sar/upload/', upload_sar, name='sar_upload'),
