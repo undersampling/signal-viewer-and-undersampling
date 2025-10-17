@@ -349,7 +349,10 @@ def generate_xor_graph_data(data, fs, position, channels, chunk_duration, purple
                 diff_signal[diff_indices] = beat2[diff_indices] - beat1[diff_indices]
 
             t_chunk = (np.arange(chunk_samples) / fs).tolist()
-            diff_masked = np.where(xor_result == 1, diff_signal, np.nan).tolist()
+            diff_signal_with_nan = np.where(xor_result == 1, diff_signal, np.nan)
+            diff_masked = [None if np.isnan(x) else x for x in diff_signal_with_nan]
+
+            # diff_masked = np.where(xor_result == 1, diff_signal, np.nan).tolist()
 
             traces.append({
                 'x': t_chunk,

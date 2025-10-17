@@ -78,12 +78,12 @@ export const apiService = {
       throw error;
     }
   },
-  eegDemo: () => apiClient.post("/api/eeg/demo/"),
+  eegDemo: () => apiClient.post("/eeg/demo/"),
 
   eegUpload: (file) => {
     const formData = new FormData();
     formData.append("file", file);
-    return apiClient.post("/api/eeg/upload/", formData, {
+    return apiClient.post("/eeg/upload/", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
@@ -101,7 +101,7 @@ export const apiService = {
     recChX,
     recChY
   ) =>
-    apiClient.post("/api/eeg/graph/", {
+    apiClient.post("/eeg/graph/", {
       data,
       fs,
       channels,
@@ -116,12 +116,12 @@ export const apiService = {
     }),
 
   // ECG endpoints
-  ecgDemo: () => apiClient.post("/api/ecg/demo/"),
+  ecgDemo: () => apiClient.post("/ecg/demo/"),
 
   ecgUpload: (file) => {
     const formData = new FormData();
     formData.append("file", file);
-    return apiClient.post("/api/ecg/upload/", formData, {
+    return apiClient.post("/ecg/upload/", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
@@ -130,7 +130,7 @@ export const apiService = {
     const formData = new FormData();
     formData.append("dat_file", datFile);
     formData.append("hea_file", heaFile);
-    return apiClient.post("/api/ecg/wfdb/", formData, {
+    return apiClient.post("/ecg/wfdb/", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
@@ -148,7 +148,7 @@ export const apiService = {
     recChX,
     recChY
   ) =>
-    apiClient.post("/api/ecg/graph/", {
+    apiClient.post("/ecg/graph/", {
       data,
       fs,
       channels,
