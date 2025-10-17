@@ -62,13 +62,103 @@ export const apiService = {
     formData.append("file", file);
     formData.append("new_rate", newRate);
     try {
-    const response = await axios.post("http://localhost:8000/api/audio/downsample/", formData, {
+      const response = await axios.post(
+        "http://localhost:8000/api/audio/downsample/",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Downsampling failed:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  },
+  eegDemo: () => apiClient.post("/api/eeg/demo/"),
+
+  eegUpload: (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiClient.post("/api/eeg/upload/", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    return response.data;
-  } catch (error) {
-    console.error("Downsampling failed:", error.response?.data || error.message);
-    throw error;
-  }
-    },
+  },
+
+  eegGraph: (
+    data,
+    fs,
+    channels,
+    viewerType,
+    position,
+    zoom,
+    chunkDuration,
+    colormap,
+    polarMode,
+    recChX,
+    recChY
+  ) =>
+    apiClient.post("/api/eeg/graph/", {
+      data,
+      fs,
+      channels,
+      viewer_type: viewerType,
+      position,
+      zoom,
+      chunk_duration: chunkDuration,
+      colormap,
+      polar_mode: polarMode,
+      rec_ch_x: recChX,
+      rec_ch_y: recChY,
+    }),
+
+  // ECG endpoints
+  ecgDemo: () => apiClient.post("/api/ecg/demo/"),
+
+  ecgUpload: (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiClient.post("/api/ecg/upload/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
+  ecgWFDB: (datFile, heaFile) => {
+    const formData = new FormData();
+    formData.append("dat_file", datFile);
+    formData.append("hea_file", heaFile);
+    return apiClient.post("/api/ecg/wfdb/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
+  ecgGraph: (
+    data,
+    fs,
+    channels,
+    viewerType,
+    position,
+    zoom,
+    chunkDuration,
+    colormap,
+    polarMode,
+    recChX,
+    recChY
+  ) =>
+    apiClient.post("/api/ecg/graph/", {
+      data,
+      fs,
+      channels,
+      viewer_type: viewerType,
+      position,
+      zoom,
+      chunk_duration: chunkDuration,
+      colormap,
+      polar_mode: polarMode,
+      rec_ch_x: recChX,
+      rec_ch_y: recChY,
+    }),
 };

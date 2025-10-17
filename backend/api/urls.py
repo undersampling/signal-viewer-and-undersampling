@@ -6,6 +6,7 @@ from .views.doppler_views import generate_doppler, upload_doppler, simulate_pass
 from .views.sar_views import upload_sar
 from .views.drone_views import DroneDetectionView, WaveformChunkView
 from .views.audio import downsample_audio
+from .views.ecg_views import EEGDemoView, EEGUploadView, EEGGraphView, ECGDemoView, ECGUploadView, ECGWFDBUploadView, ECGGraphView
 
 urlpatterns = [
     # For the initial upload, prediction, and spectrogram
@@ -23,5 +24,15 @@ urlpatterns = [
 
     # SAR endpoints
     path('sar/upload/', upload_sar, name='sar_upload'),
+    # EEG endpoints
+    path('api/eeg/demo/', EEGDemoView.as_view(), name='eeg-demo'),
+    path('api/eeg/upload/', EEGUploadView.as_view(), name='eeg-upload'),
+    path('api/eeg/graph/', EEGGraphView.as_view(), name='eeg-graph'),
+
+    # ECG endpoints
+    path('api/ecg/demo/', ECGDemoView.as_view(), name='ecg-demo'),
+    path('api/ecg/upload/', ECGUploadView.as_view(), name='ecg-upload'),
+    path('api/ecg/wfdb/', ECGWFDBUploadView.as_view(), name='ecg-wfdb'),
+    path('api/ecg/graph/', ECGGraphView.as_view(), name='ecg-graph'),
 
 ]

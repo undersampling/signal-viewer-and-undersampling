@@ -8,6 +8,8 @@ import Drone from "./pages/Drone/Drone";
 import Doppler from "./pages/Doppler/Doppler";
 import SAR from "./pages/SAR/SAR";
 import Human from "./pages/Human/Human";
+import EEG from "./pages/EEGViewer";
+import ECG from "./pages/ECGViewer";
 
 const App = () => {
   return (
@@ -29,8 +31,8 @@ const App = () => {
                 </div>
               }
             />
-            <Route path="/ecg" element={<div>EEG Page - Coming Soon</div>} />
-            <Route path="/eeg" element={<div>EEG Page - Coming Soon</div>} />
+            <Route path="/ecg" element={<ECG />} />
+            <Route path="/eeg" element={<EEG />} />
             <Route path="/drone" element={<Drone />} />
 
             <Route path="/human" element={<Human />} />

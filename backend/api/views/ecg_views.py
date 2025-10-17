@@ -10,7 +10,7 @@ from .serializers import (
     WFDBUploadSerializer,
     SignalGraphSerializer
 )
-from .utils import (
+from ..utils import (
     predict_eeg_abnormality,
     predict_ecg_abnormality,
     generate_synthetic_eeg,
