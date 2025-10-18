@@ -709,8 +709,8 @@ SPEED_OF_SOUND = 343.0
 EPS = 1e-8
 SAMPLE_RATE = 16000
 
-MODEL_PATH="D:/DSP_Tasks/signal-viewer-and-undersampling/backend/models/doppler_regressor_3_outputs.keras"
-CONFIG_PATH="D:/DSP_Tasks/signal-viewer-and-undersampling/backend/models/spectrogram_width.npy"
+MODEL_PATH="D:/DSP_Tasks/signal-viewer-and-undersampling/backend/models/doppler_regressor_cnn_2.keras"
+CONFIG_PATH="D:/DSP_Tasks/signal-viewer-and-undersampling/backend/models/spectrogram_width_2.npy"
 
 # Ensure globals are defined so _lazy_load_model can reference them safely
 REG_MODEL = None
