@@ -21,3 +21,4 @@ class SignalGraphSerializer(serializers.Serializer):
     polar_mode = serializers.CharField(required=False)
     rec_ch_x = serializers.IntegerField(required=False)
     rec_ch_y = serializers.IntegerField(required=False)
+    undersample_freq = serializers.IntegerField(required=False, allow_null=True, default=None)  # NEW: Nyquist undersampling

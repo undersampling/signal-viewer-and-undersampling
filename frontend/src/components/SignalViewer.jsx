@@ -20,26 +20,15 @@ export default function SignalViewer({ isECG = false }) {
   const [polarMode, setPolarMode] = useState("fixed");
   const [recChX, setRecChX] = useState(0);
   const [recChY, setRecChY] = useState(1);
+  const [undersampleFreq, setUndersampleFreq] = useState(null);
 
   const [graphData, setGraphData] = useState(null);
   const [currentTime, setCurrentTime] = useState("");
+  const [error, setError] = useState(null);
 
   const maxChannels = isECG ? 12 : 8;
   const leadNames = isECG
-    ? [
-        "I",
-        "II",
-        "III",
-        "aVR",
-        "aVL",
-        "aVF",
-        "V1",
-        "V2",
-        "V3",
-        "V4",
-        "V5",
-        "V6",
-      ]
+    ? ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
     : Array.from({ length: 19 }, (_, i) => `Ch ${i + 1}`);
 
   const API = isECG ? apiService.ecgDemo : apiService.eegDemo;
@@ -49,8 +38,10 @@ export default function SignalViewer({ isECG = false }) {
   // Load demo data
   const loadDemoData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const response = await API();
+      console.log("Demo data loaded:", response.data);
       setSignalData(response.data);
       setPrediction({
         label: response.data.prediction,
@@ -58,10 +49,11 @@ export default function SignalViewer({ isECG = false }) {
       });
       setPosition(0);
       setChannels(
-        Array.from({ length: Math.min(4, response.data.channels) }, (_, i) => i)
+        Array.from({ length: Math.min(4, response.data.channels || response.data.leads) }, (_, i) => i)
       );
     } catch (error) {
       console.error("Error loading demo:", error);
+      setError("Error loading demo data: " + error.message);
       alert("Error loading demo data: " + error.message);
     } finally {
       setLoading(false);
@@ -74,8 +66,10 @@ export default function SignalViewer({ isECG = false }) {
     if (!file) return;
 
     setLoading(true);
+    setError(null);
     try {
       const response = await uploadAPI(file);
+      console.log("File uploaded:", response.data);
       setSignalData(response.data);
       setPrediction({
         label: response.data.prediction,
@@ -92,6 +86,7 @@ export default function SignalViewer({ isECG = false }) {
       );
     } catch (error) {
       console.error("Error uploading file:", error);
+      setError("Error uploading file: " + error.message);
       alert("Error uploading file: " + error.message);
     } finally {
       setLoading(false);
@@ -111,8 +106,10 @@ export default function SignalViewer({ isECG = false }) {
     }
 
     setLoading(true);
+    setError(null);
     try {
       const response = await apiService.ecgWFDB(datFile, heaFile);
+      console.log("WFDB uploaded:", response.data);
       setSignalData(response.data);
       setPrediction({
         label: response.data.prediction,
@@ -124,6 +121,7 @@ export default function SignalViewer({ isECG = false }) {
       );
     } catch (error) {
       console.error("Error uploading WFDB:", error);
+      setError("Error uploading WFDB files: " + error.message);
       alert("Error uploading WFDB files: " + error.message);
     } finally {
       setLoading(false);
@@ -132,10 +130,22 @@ export default function SignalViewer({ isECG = false }) {
 
   // Update graph
   useEffect(() => {
-    if (!signalData || !channels.length) return;
+    if (!signalData || !channels.length) {
+      console.log("Skipping graph update - no signal data or channels");
+      return;
+    }
 
     const updateGraph = async () => {
       try {
+        console.log("Updating graph with params:", {
+          viewerType,
+          position,
+          zoom,
+          channels,
+          undersampleFreq,
+          polarMode
+        });
+
         const response = await graphAPI(
           signalData.data,
           signalData.fs,
@@ -147,12 +157,25 @@ export default function SignalViewer({ isECG = false }) {
           colormap,
           polarMode,
           recChX,
-          recChY
+          recChY,
+          undersampleFreq
         );
-        setGraphData(response.data.traces);
-        setCurrentTime(response.data.current_time);
+
+        console.log("Graph response:", response.data);
+
+        if (response.data && response.data.traces) {
+          setGraphData(response.data.traces);
+          setCurrentTime(response.data.current_time);
+          setError(null);
+        } else {
+          console.error("Invalid response format:", response.data);
+          setError("Invalid graph data received");
+        }
       } catch (error) {
         console.error("Error updating graph:", error);
+        console.error("Error details:", error.response?.data);
+        setError("Error updating graph: " + (error.response?.data?.error || error.message));
+        setGraphData(null);
       }
     };
 
@@ -168,6 +191,7 @@ export default function SignalViewer({ isECG = false }) {
     polarMode,
     recChX,
     recChY,
+    undersampleFreq,
   ]);
 
   // Playback interval
@@ -256,6 +280,19 @@ export default function SignalViewer({ isECG = false }) {
           {isECG ? "ECG" : "EEG"} Multi-Channel Viewer
         </h1>
       </div>
+
+      {error && (
+        <div style={{
+          background: '#fee',
+          border: '2px solid #f88',
+          padding: '15px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          color: '#c00'
+        }}>
+          <strong>Error:</strong> {error}
+        </div>
+      )}
 
       {prediction && (
         <div className="prediction-card">
@@ -368,6 +405,23 @@ export default function SignalViewer({ isECG = false }) {
               onChange={(e) => setChunkDuration(parseFloat(e.target.value))}
             />
           </div>
+
+          <div className="slider-group">
+            <label>
+              Nyquist Undersampling: {undersampleFreq || signalData.fs} Hz
+            </label>
+            <input
+              type="range"
+              min="1"
+              max={Math.min(501, signalData.fs)}
+              step="1"
+              value={undersampleFreq || signalData.fs}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                setUndersampleFreq(val === signalData.fs ? null : val);
+              }}
+            />
+          </div>
         </div>
 
         <div className="additional-controls">
@@ -394,6 +448,7 @@ export default function SignalViewer({ isECG = false }) {
               >
                 <option value="fixed">Fixed Time</option>
                 <option value="cumulative">Cumulative</option>
+                {isECG && <option value="cycles">ECG Cycles (360°)</option>}
               </select>
             </div>
           )}
@@ -463,7 +518,12 @@ export default function SignalViewer({ isECG = false }) {
             style={{ width: "100%", height: "600px" }}
           />
         ) : (
-          <div className="loading">Loading graph...</div>
+          <div className="loading">
+            {error ? `Error: ${error}` : "Loading graph..."}
+            <div style={{ marginTop: '10px', fontSize: '0.9em', color: '#666' }}>
+              Check browser console for details
+            </div>
+          </div>
         )}
       </div>
     </div>

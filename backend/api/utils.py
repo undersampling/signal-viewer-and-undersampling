@@ -138,6 +138,7 @@ def generate_synthetic_eeg(n_channels=8, duration=10, fs=256, abnormality_type=0
     return data, fs
 
 
+
 def parse_eeg_file(file_obj):
     """Parse EEG file (CSV or NPY)"""
     try:
@@ -366,8 +367,18 @@ def generate_xor_graph_data(data, fs, position, channels, chunk_duration, purple
     return traces
 
 
-def generate_polar_graph_data(data, fs, position, channels, zoom, polar_mode, purple_colors, lead_names=None):
+def generate_polar_graph_data(data, fs, position, channels, zoom, polar_mode, purple_colors, lead_names=None,
+                              is_ecg=False):
     """Generate polar graph data"""
+    try:
+        # NEW: Handle ECG cycles mode
+        if is_ecg and polar_mode == 'cycles':
+            return generate_polar_ecg_cycles(data, fs, position, channels, zoom, purple_colors, lead_names)
+    except Exception as e:
+        print(f"ECG cycles mode failed: {e}, falling back to standard polar")
+        polar_mode = 'fixed'  # Fallback to fixed mode
+
+    # ORIGINAL CODE (unchanged)
     total_samples = data.shape[1]
     window_samples = max(1, int(zoom * fs))
 
@@ -420,3 +431,114 @@ def generate_recurrence_graph_data(data, fs, position, channels, zoom, rec_ch_x,
         }
 
     return None
+
+
+def apply_undersampling(data, original_fs, target_fs):
+    """Apply Nyquist undersampling effect by downsampling the signal"""
+    try:
+        if target_fs is None or target_fs >= original_fs or target_fs <= 0:
+            return data, original_fs
+
+        decimation_factor = int(original_fs / target_fs)
+        if decimation_factor <= 1:
+            return data, original_fs
+
+        undersampled_data = data[:, ::decimation_factor]
+        return undersampled_data, target_fs
+    except Exception as e:
+        print(f"Undersampling error: {e}, returning original data")
+        return data, original_fs
+
+
+def detect_ecg_cycles_simple(ecg_signal, fs):
+    """Simple R-peak detection without scipy"""
+    try:
+        signal_norm = (ecg_signal - np.mean(ecg_signal)) / (np.std(ecg_signal) + 1e-8)
+        threshold = 0.5 * np.max(signal_norm)
+        min_distance_samples = int(0.3 * fs)
+
+        peaks = []
+        i = 0
+        while i < len(signal_norm):
+            if signal_norm[i] > threshold:
+                local_max_idx = i
+                local_max_val = signal_norm[i]
+
+                j = i + 1
+                while j < min(i + int(0.1 * fs), len(signal_norm)):
+                    if signal_norm[j] > local_max_val:
+                        local_max_val = signal_norm[j]
+                        local_max_idx = j
+                    j += 1
+
+                peaks.append(local_max_idx)
+                i = local_max_idx + min_distance_samples
+            else:
+                i += 1
+
+        return np.array(peaks)
+    except Exception as e:
+        print(f"Peak detection error: {e}")
+        return np.array([])
+
+
+def generate_polar_ecg_cycles(data, fs, position, channels, zoom, purple_colors, lead_names=None):
+    """Generate polar graph with each ECG cycle drawn at 360 degrees - continuous, no offset"""
+    try:
+        total_samples = data.shape[1]
+        window_samples = max(1, int(zoom * fs))
+        start_idx = int(position * fs) % total_samples
+        window = slice_window_with_wrap(data, start_idx, window_samples)
+
+        traces = []
+
+        for i, ch in enumerate(channels):
+            if ch >= data.shape[0]:
+                continue
+
+            segment = window[ch, :]
+            peaks = detect_ecg_cycles_simple(segment, fs)
+
+            if len(peaks) < 2:
+                # Fallback: treat as single cycle
+                theta = np.linspace(0, 360, len(segment), endpoint=False).tolist()
+                r = segment.tolist()
+
+                traces.append({
+                    'r': r,
+                    'theta': theta,
+                    'mode': 'lines',
+                    'name': f'Lead {lead_names[ch] if lead_names else ch + 1}',
+                    'line': {'width': 2, 'color': purple_colors[i % len(purple_colors)]},
+                    'type': 'scatterpolar'
+                })
+            else:
+                # Multiple cycles - continuous, no offset
+                all_r = []
+                all_theta = []
+
+                for cycle_idx in range(len(peaks) - 1):
+                    start_peak = peaks[cycle_idx]
+                    end_peak = peaks[cycle_idx + 1]
+                    cycle_data = segment[start_peak:end_peak]
+
+                    theta_cycle = np.linspace(0, 360, len(cycle_data), endpoint=False)
+                    r_cycle = cycle_data  # NO offset - continuous
+
+                    all_theta.extend(theta_cycle.tolist())
+                    all_r.extend(r_cycle.tolist())
+                    # NO NaN separator - continuous line
+
+                traces.append({
+                    'r': all_r,
+                    'theta': all_theta,
+                    'mode': 'lines',
+                    'name': f'Lead {lead_names[ch] if lead_names else ch + 1}',
+                    'line': {'width': 2, 'color': purple_colors[i % len(purple_colors)]},
+                    'type': 'scatterpolar'
+                })
+
+        return traces
+    except Exception as e:
+        print(f"ECG cycles generation error: {e}")
+        raise  # Re-raise so the call

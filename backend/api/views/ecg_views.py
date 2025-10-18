@@ -10,7 +10,7 @@ from .serializers import (
     WFDBUploadSerializer,
     SignalGraphSerializer
 )
-from ..utils import (
+from ..utils import (  # Note: might be ..utils depending on your structure
     predict_eeg_abnormality,
     predict_ecg_abnormality,
     generate_synthetic_eeg,
@@ -24,9 +24,11 @@ from ..utils import (
     generate_xor_graph_data,
     generate_polar_graph_data,
     generate_recurrence_graph_data,
-    slice_window_with_wrap
+    slice_window_with_wrap,
+    apply_undersampling,  # NEW
 )
 
+# These should be defined at module level in your views file
 PURPLE_COLORS = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#11998e', '#38ef7d',
                  '#4facfe', '#00f2fe', '#fa709a', '#fee140', '#30cfd0', '#330867']
 
@@ -193,8 +195,12 @@ class ECGWFDBUploadView(APIView):
 class EEGGraphView(APIView):
     def post(self, request):
         try:
+            print("=== EEG Graph Request ===")
+            print("Request data keys:", request.data.keys())
+
             serializer = SignalGraphSerializer(data=request.data)
             if not serializer.is_valid():
+                print("Serializer errors:", serializer.errors)
                 return Response(serializer.errors, status=400)
 
             data = np.array(serializer.validated_data['data'])
@@ -208,6 +214,16 @@ class EEGGraphView(APIView):
             polar_mode = serializer.validated_data.get('polar_mode', 'fixed')
             rec_ch_x = serializer.validated_data.get('rec_ch_x', 0)
             rec_ch_y = serializer.validated_data.get('rec_ch_y', 1)
+            undersample_freq = serializer.validated_data.get('undersample_freq', None)
+
+            print(f"Data shape: {data.shape}, FS: {fs}, Viewer: {viewer_type}")
+            print(f"Undersample freq: {undersample_freq}")
+
+            # Apply undersampling if requested
+            if undersample_freq is not None and undersample_freq > 0 and undersample_freq < fs:
+                print(f"Applying undersampling from {fs}Hz to {undersample_freq}Hz")
+                data, fs = apply_undersampling(data, fs, undersample_freq)
+                print(f"After undersampling - Data shape: {data.shape}, New FS: {fs}")
 
             current_time = f"⏱️ {position:.2f}s / {data.shape[1] / fs:.2f}s"
 
@@ -221,6 +237,29 @@ class EEGGraphView(APIView):
                     'yaxis_title': 'Amplitude',
                     'template': 'plotly_white',
                     'plot_bgcolor': '#f8f9ff',
+                    'height': 600
+                }
+
+            elif viewer_type == 'xor':
+                traces = generate_xor_graph_data(
+                    data, fs, position, channels, chunk_duration, PURPLE_COLORS, EEG_LEAD_NAMES
+                )
+                layout = {
+                    'title': f'⚡ XOR Difference Graph (Chunk: {chunk_duration}s)',
+                    'xaxis_title': 'Time within window (s)',
+                    'yaxis_title': 'Difference Amplitude',
+                    'template': 'plotly_white',
+                    'plot_bgcolor': '#f8f9ff',
+                    'height': 600
+                }
+
+            elif viewer_type == 'polar':
+                traces = generate_polar_graph_data(
+                    data, fs, position, channels, zoom, polar_mode, PURPLE_COLORS, EEG_LEAD_NAMES, is_ecg=False
+                )
+                layout = {
+                    'title': f'🎯 Polar Graph ({polar_mode.capitalize()})',
+                    'polar': {'radialaxis': {'visible': True}},
                     'height': 600
                 }
 
@@ -244,13 +283,21 @@ class EEGGraphView(APIView):
                 traces = []
                 layout = {'title': 'Unknown viewer type'}
 
-            return Response({
+            print(f"Generated {len(traces)} traces")
+
+            response_data = {
                 'traces': traces,
                 'layout': layout,
                 'current_time': current_time,
                 'success': True
-            })
+            }
+
+            return Response(response_data)
+
         except Exception as e:
+            import traceback
+            print("=== ERROR in EEGGraphView ===")
+            print(traceback.format_exc())
             return Response({
                 'error': str(e),
                 'success': False
@@ -260,8 +307,12 @@ class EEGGraphView(APIView):
 class ECGGraphView(APIView):
     def post(self, request):
         try:
+            print("=== ECG Graph Request ===")
+            print("Request data keys:", request.data.keys())
+
             serializer = SignalGraphSerializer(data=request.data)
             if not serializer.is_valid():
+                print("Serializer errors:", serializer.errors)
                 return Response(serializer.errors, status=400)
 
             data = np.array(serializer.validated_data['data'])
@@ -275,6 +326,16 @@ class ECGGraphView(APIView):
             polar_mode = serializer.validated_data.get('polar_mode', 'fixed')
             rec_ch_x = serializer.validated_data.get('rec_ch_x', 0)
             rec_ch_y = serializer.validated_data.get('rec_ch_y', 1)
+            undersample_freq = serializer.validated_data.get('undersample_freq', None)
+
+            print(f"Data shape: {data.shape}, FS: {fs}, Viewer: {viewer_type}")
+            print(f"Polar mode: {polar_mode}, Undersample freq: {undersample_freq}")
+
+            # Apply undersampling if requested
+            if undersample_freq is not None and undersample_freq > 0 and undersample_freq < fs:
+                print(f"Applying undersampling from {fs}Hz to {undersample_freq}Hz")
+                data, fs = apply_undersampling(data, fs, undersample_freq)
+                print(f"After undersampling - Data shape: {data.shape}, New FS: {fs}")
 
             current_time = f"⏱️ {position:.2f}s / {data.shape[1] / fs:.2f}s"
 
@@ -305,11 +366,13 @@ class ECGGraphView(APIView):
                 }
 
             elif viewer_type == 'polar':
+                print(f"Generating polar graph - mode: {polar_mode}, is_ecg: True")
                 traces = generate_polar_graph_data(
-                    data, fs, position, channels, zoom, polar_mode, PURPLE_COLORS, ECG_LEAD_NAMES
+                    data, fs, position, channels, zoom, polar_mode, PURPLE_COLORS, ECG_LEAD_NAMES, is_ecg=True
                 )
+                mode_title = 'Cycles' if polar_mode == 'cycles' else polar_mode.capitalize()
                 layout = {
-                    'title': f'🎯 Polar Graph ({polar_mode.capitalize()})',
+                    'title': f'🎯 Polar Graph ({mode_title})',
                     'polar': {'radialaxis': {'visible': True}},
                     'height': 600
                 }
@@ -334,13 +397,21 @@ class ECGGraphView(APIView):
                 traces = []
                 layout = {'title': 'Unknown viewer type'}
 
-            return Response({
+            print(f"Generated {len(traces)} traces")
+
+            response_data = {
                 'traces': traces,
                 'layout': layout,
                 'current_time': current_time,
                 'success': True
-            })
+            }
+
+            return Response(response_data)
+
         except Exception as e:
+            import traceback
+            print("=== ERROR in ECGGraphView ===")
+            print(traceback.format_exc())
             return Response({
                 'error': str(e),
                 'success': False

@@ -109,7 +109,8 @@ export const apiService = {
     colormap,
     polarMode,
     recChX,
-    recChY
+    recChY,
+    undersampleFreq  // NEW parameter
   ) =>
     apiClient.post("/eeg/graph/", {
       data,
@@ -123,6 +124,7 @@ export const apiService = {
       polar_mode: polarMode,
       rec_ch_x: recChX,
       rec_ch_y: recChY,
+      undersample_freq: undersampleFreq,  // NEW
     }),
 
   // ECG endpoints
@@ -156,7 +158,8 @@ export const apiService = {
     colormap,
     polarMode,
     recChX,
-    recChY
+    recChY,
+    undersampleFreq  // NEW parameter
   ) =>
     apiClient.post("/ecg/graph/", {
       data,
@@ -170,5 +173,6 @@ export const apiService = {
       polar_mode: polarMode,
       rec_ch_x: recChX,
       rec_ch_y: recChY,
+      undersample_freq: undersampleFreq,  // NEW
     }),
 };
