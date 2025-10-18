@@ -1,9 +1,270 @@
+// import React, { useState, useEffect } from "react";
+// import { apiService } from "../../services/api";
+// import "../../components/Audio.css";
+// import AudioUploader from "../../components/AudioUploader";
+// import DisplayAudio from "../../components/DisplayAudio";
 
+// const Human = () => {
+//   const [file, setFile] = useState(null);
+//   const [audioSrc, setAudioSrc] = useState(null);
+//   const [analysis, setAnalysis] = useState(null);
+//   const [error, setError] = useState("");
+//   const [isLoading, setIsLoading] = useState(false);
+
+//   // Comparison state
+//   const [showComparison, setShowComparison] = useState(false);
+//   const [originalRate, setOriginalRate] = useState(null);
+
+//   // States for resampling logic with debounce
+//   const [resampleRate, setResampleRate] = useState(null);
+//   const [sliderValue, setSliderValue] = useState(null);
+
+//   // Resampled audio state
+//   const [resampledAudio, setResampledAudio] = useState(null);
+//   const [resampledAnalysis, setResampledAnalysis] = useState(null);
+//   const [isResampling, setIsResampling] = useState(false);
+
+//   // Handle file selection
+//   const handleFileSelected = (selectedFile) => {
+//     setFile(selectedFile);
+//     setAudioSrc(URL.createObjectURL(selectedFile));
+//     setAnalysis(null);
+//     setError("");
+//     setShowComparison(false);
+//     setResampledAudio(null);
+//     setResampledAnalysis(null);
+//     setOriginalRate(null);
+//     setResampleRate(null);
+//     setSliderValue(null);
+//   };
+
+//   const handleAnalyze = async () => {
+//     if (!file) return;
+//     setIsLoading(true);
+//     setError("");
+//     try {
+//       const response = await apiService.detectDrone(file);
+//       setAnalysis(response.data);
+//       if (response.data && response.data.original_rate) {
+//         setOriginalRate(response.data.original_rate);
+//         setResampleRate(response.data.original_rate);
+//         setSliderValue(response.data.original_rate);
+//       }
+//     } catch (err) {
+//       setError(err.response?.data?.error || "Analysis failed.");
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   // Handle resampling of the audio
+//   const handleResample = async () => {
+//     if (!file) {
+//       setError("Please upload an audio file first.");
+//       return;
+//     }
+//     if (!resampleRate || resampleRate <= 0) {
+//       console.warn("Invalid resampleRate for handleResample:", resampleRate);
+//       return;
+//     }
+
+//     setIsResampling(true);
+//     setError("");
+
+//     try {
+//       const response = await apiService.downsampleAudio(file, resampleRate);
+
+//       let data;
+//       if (response && response.data) {
+//         data = response.data;
+//       } else if (response && typeof response === "object") {
+//         data = response;
+//       } else {
+//         throw new Error("Invalid response structure");
+//       }
+
+//       if (!data.original_rate && data.original_rate !== 0) {
+//         console.warn("Original rate not provided in downsample response.");
+//       }
+
+//       setResampledAudio(data.downsampled_audio);
+
+//       // Analyze the resampled audio
+//       await analyzeResampledAudio(data.downsampled_audio);
+//     } catch (err) {
+//       console.error("Resampling error:", err);
+//       const errorMessage =
+//         err.response?.data?.error || err.message || "Resampling failed.";
+//       setError(errorMessage);
+//     } finally {
+//       setIsResampling(false);
+//     }
+//   };
+
+//   // Analyze the resampled audio
+//   const analyzeResampledAudio = async (audioDataUri) => {
+//     try {
+//       const response = await fetch(audioDataUri);
+//       const blob = await response.blob();
+//       const resampledFile = new File([blob], `resampled_${resampleRate}.wav`, {
+//         type: "audio/wav",
+//       });
+
+//       const analysisResponse = await apiService.detectDrone(resampledFile);
+//       setResampledAnalysis(analysisResponse.data);
+//     } catch (err) {
+//       console.error("Resampled analysis error:", err);
+//       setError("Failed to analyze resampled audio.");
+//     }
+//   };
+
+//   // Toggle comparison mode
+//   const toggleComparison = () => {
+//     if (!showComparison) {
+//       // If turning comparison ON, initialize with originalRate
+//       const initialRate = originalRate > 0 ? originalRate : 16000;
+//       setSliderValue(initialRate);
+//       setResampleRate(initialRate);
+//     } else {
+//       // If turning comparison OFF, reset resampled data
+//       setResampledAudio(null);
+//       setResampledAnalysis(null);
+//     }
+//     setShowComparison(!showComparison);
+//   };
+
+//   // Effect to handle resampling when resampleRate changes
+//   useEffect(() => {
+//     if (showComparison && file && resampleRate > 0) {
+//       handleResample();
+//     }
+//   }, [resampleRate, showComparison, file]);
+
+//   // Effect to debounce the slider input
+//   useEffect(() => {
+//     if (!showComparison || !file) {
+//       return;
+//     }
+
+//     const handler = setTimeout(() => {
+//       if (sliderValue !== resampleRate) {
+//         setResampleRate(sliderValue);
+//       }
+//     }, 500);
+
+//     return () => {
+//       clearTimeout(handler);
+//     };
+//   }, [sliderValue, showComparison, file, resampleRate]);
+
+//   return (
+//     <div className="page-container">
+//       <h1 className="page-title">🚁 Human Audio Aliasing</h1>
+
+//       <div className="upload-section">
+//         <AudioUploader
+//           onFileSelect={handleFileSelected}
+//           onAnalyze={handleAnalyze}
+//           isLoading={isLoading}
+//           accept=".wav,.mp3"
+//         />
+//       </div>
+
+//       {error && <div className="alert error">{error}</div>}
+
+//       {analysis && (
+//         <div className="results-container">
+//           <div className="alert info">
+//             <h3>Original Audio</h3>
+//             {originalRate > 0 && <p>Sample Rate: {originalRate} Hz</p>}
+//           </div>
+
+//           {/* Comparison Toggle Button */}
+//           <div className="comparison-controls">
+//             <button
+//               className="btn btn-secondary"
+//               onClick={toggleComparison}
+//               disabled={isLoading || isResampling}
+//             >
+//               {isResampling
+//                 ? "Processing..."
+//                 : showComparison
+//                 ? "Hide Comparison"
+//                 : "Show Comparison"}
+//             </button>
+
+//             {/* Resample Rate Slider */}
+//             {showComparison && originalRate && (
+//               <div className="resample-control">
+//                 <label>
+//                   Resample Rate: <strong>{sliderValue} Hz</strong>
+//                 </label>
+//                 <input
+//                   type="range"
+//                   min="500" // Adjusted min value for more flexibility
+//                   max={originalRate} // Set max to originalRate
+//                   step="1000"
+//                   value={sliderValue || originalRate} // Use originalRate if sliderValue is null
+//                   onChange={(e) => setSliderValue(Number(e.target.value))}
+//                   disabled={isResampling}
+//                 />
+//               </div>
+//             )}
+//           </div>
+
+//           {/* Conditional Rendering: Single or Side-by-Side */}
+//           {!showComparison ? (
+//             // Single display
+//             <DisplayAudio
+//               analysis={analysis}
+//               audioSrc={audioSrc}
+//               setError={setError}
+//             />
+//           ) : (
+//             // Side-by-side comparison
+//             <div className="comparison-container">
+//               <div className="comparison-side">
+//                 <h3>
+//                   Original Audio ({originalRate > 0 ? originalRate : "N/A"} Hz)
+//                 </h3>
+//                 <DisplayAudio
+//                   analysis={analysis}
+//                   audioSrc={audioSrc}
+//                   setError={setError}
+//                 />
+//               </div>
+
+//               <div className="comparison-side">
+//                 <h3>Resampled Audio ({resampleRate} Hz)</h3>
+//                 {isResampling ? (
+//                   <div className="loading-spinner">Processing...</div>
+//                 ) : resampledAudio && resampledAnalysis ? (
+//                   <DisplayAudio
+//                     analysis={resampledAnalysis}
+//                     audioSrc={resampledAudio}
+//                     setError={setError}
+//                   />
+//                 ) : (
+//                   <div className="alert info">
+//                     Adjust the sample rate slider to generate resampled audio
+//                   </div>
+//                 )}
+//               </div>
+//             </div>
+//           )}
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default Human;
 import React, { useState, useEffect } from "react";
 import { apiService } from "../../services/api";
 import "../../components/Audio.css";
 import AudioUploader from "../../components/AudioUploader";
 import DisplayAudio from "../../components/DisplayAudio";
+import "./Human.css";
 
 const Human = () => {
   const [file, setFile] = useState(null);
@@ -14,17 +275,27 @@ const Human = () => {
 
   // Comparison state
   const [showComparison, setShowComparison] = useState(false);
-  const [originalRate, setOriginalRate] = useState(0); // Stores the sample rate of the original uploaded audio
+  const [originalRate, setOriginalRate] = useState(null);
 
-  // States for resampling logic
-  const [resampleRate, setResampleRate] = useState(16000); // This is the 'effective' rate that triggers resampling
-  const [sliderValue, setSliderValue] = useState(16000); // This is the rate displayed by the slider, updates immediately
+  // States for resampling logic with debounce
+  const [resampleRate, setResampleRate] = useState(null);
+  const [sliderValue, setSliderValue] = useState(null);
 
   // Resampled audio state
   const [resampledAudio, setResampledAudio] = useState(null);
   const [resampledAnalysis, setResampledAnalysis] = useState(null);
   const [isResampling, setIsResampling] = useState(false);
 
+  // Corrected audio state
+  const [correctedAudio, setCorrectedAudio] = useState(null);
+  const [correctedAnalysis, setCorrectedAnalysis] = useState(null);
+  const [isCorrecting, setIsCorrecting] = useState(false);
+  const [showCorrection, setShowCorrection] = useState(false);
+
+  // Carousel state (0 = Original+Resampled, 1 = Resampled+Corrected)
+  const [carouselPosition, setCarouselPosition] = useState(0);
+
+  // Handle file selection
   const handleFileSelected = (selectedFile) => {
     setFile(selectedFile);
     setAudioSrc(URL.createObjectURL(selectedFile));
@@ -33,9 +304,13 @@ const Human = () => {
     setShowComparison(false);
     setResampledAudio(null);
     setResampledAnalysis(null);
-    setResampleRate(16000); // Reset effective resample rate
-    setSliderValue(16000); // Reset slider display value
-    setOriginalRate(0); // Reset original rate
+    setCorrectedAudio(null);
+    setCorrectedAnalysis(null);
+    setShowCorrection(false);
+    setOriginalRate(null);
+    setResampleRate(null);
+    setSliderValue(null);
+    setCarouselPosition(0);
   };
 
   const handleAnalyze = async () => {
@@ -45,9 +320,10 @@ const Human = () => {
     try {
       const response = await apiService.detectDrone(file);
       setAnalysis(response.data);
-      // Assuming original_rate is part of the initial analysis response
       if (response.data && response.data.original_rate) {
         setOriginalRate(response.data.original_rate);
+        setResampleRate(response.data.original_rate);
+        setSliderValue(response.data.original_rate);
       }
     } catch (err) {
       setError(err.response?.data?.error || "Analysis failed.");
@@ -56,13 +332,13 @@ const Human = () => {
     }
   };
 
+  // Handle resampling of the audio
   const handleResample = async () => {
     if (!file) {
       setError("Please upload an audio file first.");
       return;
     }
-    // Only proceed if resampleRate is a valid positive number
-    if (resampleRate <= 0) {
+    if (!resampleRate || resampleRate <= 0) {
       console.warn("Invalid resampleRate for handleResample:", resampleRate);
       return;
     }
@@ -71,50 +347,44 @@ const Human = () => {
     setError("");
 
     try {
-      // Use the debounced `resampleRate` for the backend call
       const response = await apiService.downsampleAudio(file, resampleRate);
-      
+
       let data;
       if (response && response.data) {
         data = response.data;
-      } else if (response && typeof response === 'object') {
+      } else if (response && typeof response === "object") {
         data = response;
       } else {
         throw new Error("Invalid response structure");
       }
 
       if (!data.original_rate && data.original_rate !== 0) {
-        // The `original_rate` from this endpoint refers to the rate *before* downsampling by the backend.
-        // If not already set from initial analysis, this would be a good place to grab it.
-        // However, for clarity, we assume originalRate is set by handleAnalyze.
         console.warn("Original rate not provided in downsample response.");
       }
 
-      // Store the audio data URI
       setResampledAudio(data.downsampled_audio);
 
       // Analyze the resampled audio
       await analyzeResampledAudio(data.downsampled_audio);
-
     } catch (err) {
       console.error("Resampling error:", err);
-      const errorMessage = err.response?.data?.error 
-        || err.message 
-        || "Resampling failed.";
+      const errorMessage =
+        err.response?.data?.error || err.message || "Resampling failed.";
       setError(errorMessage);
     } finally {
       setIsResampling(false);
     }
   };
 
+  // Analyze the resampled audio
   const analyzeResampledAudio = async (audioDataUri) => {
     try {
-      // Convert data URI to Blob
       const response = await fetch(audioDataUri);
       const blob = await response.blob();
-      const resampledFile = new File([blob], `resampled_${resampleRate}.wav`, { type: "audio/wav" });
+      const resampledFile = new File([blob], `resampled_${resampleRate}.wav`, {
+        type: "audio/wav",
+      });
 
-      // Analyze the resampled file
       const analysisResponse = await apiService.detectDrone(resampledFile);
       setResampledAnalysis(analysisResponse.data);
     } catch (err) {
@@ -123,52 +393,119 @@ const Human = () => {
     }
   };
 
+  // Handle correction (anti-aliasing)
+  const handleCorrection = async () => {
+    if (!resampledAudio) {
+      setError("Please resample the audio first.");
+      return;
+    }
+
+    setIsCorrecting(true);
+    setError("");
+
+    try {
+      // Convert resampledAudio (data URI) to file
+      const response = await fetch(resampledAudio);
+      const blob = await response.blob();
+      const resampledFile = new File([blob], `resampled_${resampleRate}.wav`, {
+        type: "audio/wav",
+      });
+
+      // Call your API service for correction (adjust endpoint as needed)
+      const correctionResponse = await apiService.detectDrone(resampledFile);
+
+      let data;
+      if (correctionResponse && correctionResponse.data) {
+        data = correctionResponse.data;
+      } else if (correctionResponse && typeof correctionResponse === "object") {
+        data = correctionResponse;
+      } else {
+        throw new Error("Invalid response structure");
+      }
+
+      setCorrectedAudio(data.corrected_audio);
+
+      // Analyze the corrected audio
+      await analyzeCorrectedAudio(data.corrected_audio);
+      setShowCorrection(true);
+    } catch (err) {
+      console.error("Correction error:", err);
+      const errorMessage =
+        err.response?.data?.error || err.message || "Correction failed.";
+      setError(errorMessage);
+    } finally {
+      setIsCorrecting(false);
+    }
+  };
+
+  // Analyze the corrected audio
+  const analyzeCorrectedAudio = async (audioDataUri) => {
+    try {
+      const response = await fetch(audioDataUri);
+      const blob = await response.blob();
+      const correctedFile = new File([blob], `corrected_${resampleRate}.wav`, {
+        type: "audio/wav",
+      });
+
+      const analysisResponse = await apiService.detectDrone(correctedFile);
+      setCorrectedAnalysis(analysisResponse.data);
+    } catch (err) {
+      console.error("Corrected analysis error:", err);
+      setError("Failed to analyze corrected audio.");
+    }
+  };
+
+  // Toggle comparison mode
   const toggleComparison = () => {
-    if (!showComparison) { // If turning comparison ON
-      // Set initial slider value and effective resample rate for the first comparison
-      const initialRate = originalRate > 0 ? Math.min(16000, originalRate) : 16000;
+    if (!showComparison) {
+      // If turning comparison ON, initialize with originalRate
+      const initialRate = originalRate > 0 ? originalRate : 16000;
       setSliderValue(initialRate);
-      setResampleRate(initialRate); // This will trigger the resampling via useEffect
-    } else { // If turning comparison OFF
+      setResampleRate(initialRate);
+    } else {
+      // If turning comparison OFF, reset resampled data
       setResampledAudio(null);
       setResampledAnalysis(null);
+      setCorrectedAudio(null);
+      setCorrectedAnalysis(null);
+      setShowCorrection(false);
+      setCarouselPosition(0);
     }
     setShowComparison(!showComparison);
   };
 
-  // EFFECT 1: Triggers `handleResample` when the debounced `resampleRate` changes
-  //           or when comparison mode is toggled on (and a file is present).
+  // Navigate carousel
+  const moveCarousel = (direction) => {
+    if (direction === "right" && carouselPosition < 1) {
+      setCarouselPosition(1);
+    } else if (direction === "left" && carouselPosition > 0) {
+      setCarouselPosition(0);
+    }
+  };
+
+  // Effect to handle resampling when resampleRate changes
   useEffect(() => {
     if (showComparison && file && resampleRate > 0) {
       handleResample();
     }
-  }, [resampleRate, showComparison, file]); // Dependencies: resampleRate (debounced), showComparison, file
+  }, [resampleRate, showComparison, file]);
 
-  // EFFECT 2: Debounces the slider input.
-  //           It watches `sliderValue` and, after a delay, updates `resampleRate`.
+  // Effect to debounce the slider input
   useEffect(() => {
-    // Only debounce if comparison is active and a file is loaded
     if (!showComparison || !file) {
       return;
     }
 
     const handler = setTimeout(() => {
-      // Only update `resampleRate` if it's different from the current `sliderValue`.
-      // This prevents unnecessary API calls if the user moves the slider but
-      // releases it at the same effective value.
       if (sliderValue !== resampleRate) {
         setResampleRate(sliderValue);
       }
-    }, 500); // 500ms debounce time (adjust as needed)
+    }, 500);
 
-    // Cleanup function: This runs if the component unmounts OR if `sliderValue` changes again
-    // before the timeout fires. This clears the previous timeout.
     return () => {
       clearTimeout(handler);
     };
-  }, [sliderValue, showComparison, file, resampleRate]); // Dependencies: `sliderValue` is the primary trigger.
-                                                          // `showComparison`, `file`, `resampleRate` are for conditions
-                                                          // and ensuring correct re-evaluation.
+  }, [sliderValue, showComparison, file, resampleRate]);
 
   return (
     <div className="page-container">
@@ -187,39 +524,44 @@ const Human = () => {
 
       {analysis && (
         <div className="results-container">
-          <div className="alert info">
-            <h3>Original Audio</h3>
-            {originalRate > 0 && <p>Sample Rate: {originalRate} Hz</p>}
-          </div>
-
           {/* Comparison Toggle Button */}
           <div className="comparison-controls">
-            <button 
-              className="btn btn-secondary" 
+            <button
+              className="btn"
               onClick={toggleComparison}
-              disabled={isLoading || isResampling} // Disable if initial analysis or resampling is ongoing
+              disabled={isLoading || isResampling}
             >
-              {isResampling 
-                ? "Processing..." 
-                : showComparison 
-                ? "Hide Comparison" 
+              {isResampling
+                ? "Processing..."
+                : showComparison
+                ? "Hide Comparison"
                 : "Show Comparison"}
             </button>
 
+            {/* Correction Button */}
+            {showComparison && resampledAudio && (
+              <button
+                className="btn "
+                onClick={handleCorrection}
+                disabled={isCorrecting || isResampling}
+              >
+                {isCorrecting ? "Correcting..." : "Correct Aliasing"}
+              </button>
+            )}
+
             {/* Resample Rate Slider */}
-            {showComparison && (
+            {showComparison && originalRate && (
               <div className="resample-control">
                 <label>
-                  Resample Rate: <strong>{sliderValue} Hz</strong> {/* Display the immediate slider value */}
+                  Resample Rate: <strong>{sliderValue} Hz</strong>
                 </label>
                 <input
                   type="range"
-                  min="8000"
-                  // Ensure max is never 0; use originalRate if available, otherwise a sensible default (e.g., 48000)
-                  max={originalRate > 0 ? originalRate : 48000} 
+                  min="500"
+                  max={originalRate}
                   step="1000"
-                  value={sliderValue} // Slider controls the immediate `sliderValue` state
-                  onChange={(e) => setSliderValue(Number(e.target.value))} // Update `sliderValue` on change
+                  value={sliderValue || originalRate}
+                  onChange={(e) => setSliderValue(Number(e.target.value))}
                   disabled={isResampling}
                 />
               </div>
@@ -235,30 +577,84 @@ const Human = () => {
               setError={setError}
             />
           ) : (
-            // Side-by-side comparison
-            <div className="comparison-container">
-              <div className="comparison-side">
-                <h3>Original Audio ({originalRate > 0 ? originalRate : 'N/A'} Hz)</h3>
-                <DisplayAudio
-                  analysis={analysis}
-                  audioSrc={audioSrc}
-                  setError={setError}
-                />
-              </div>
+            // Side-by-side comparison with carousel
+            <div className="comparison-wrapper">
+              {/* Navigation Buttons */}
+              {showCorrection && (
+                <div className="carousel-navigation">
+                  <button
+                    className="carousel-btn"
+                    onClick={() => moveCarousel("left")}
+                    disabled={carouselPosition === 0}
+                  >
+                    ← Left
+                  </button>
+                  <span className="carousel-indicator">
+                    {carouselPosition === 0
+                      ? "Original vs Undersampling"
+                      : "Undersampling vs Correction"}
+                  </span>
+                  <button
+                    className="carousel-btn"
+                    onClick={() => moveCarousel("right")}
+                    disabled={carouselPosition === 1}
+                  >
+                    Right →
+                  </button>
+                </div>
+              )}
 
-              <div className="comparison-side">
-                <h3>Resampled Audio ({resampleRate} Hz)</h3> {/* Display the effective `resampleRate` here */}
-                {isResampling ? (
-                  <div className="loading-spinner">Processing...</div>
-                ) : resampledAudio && resampledAnalysis ? (
-                  <DisplayAudio
-                    analysis={resampledAnalysis}
-                    audioSrc={resampledAudio}
-                    setError={setError}
-                  />
-                ) : (
-                  <div className="alert info">
-                    Adjust the sample rate slider to generate resampled audio
+              <div className="comparison-container">
+                {/* Original Audio - Only visible in position 0 */}
+                {carouselPosition === 0 && (
+                  <div className="comparison-side">
+                    <h3>
+                      Original Audio ({originalRate > 0 ? originalRate : "N/A"}{" "}
+                      Hz)
+                    </h3>
+                    <DisplayAudio
+                      analysis={analysis}
+                      audioSrc={audioSrc}
+                      setError={setError}
+                    />
+                  </div>
+                )}
+
+                {/* Resampled Audio - Always visible */}
+                <div className="comparison-side">
+                  <h3>Undersampling ({resampleRate} Hz)</h3>
+                  {isResampling ? (
+                    <div className="loading-spinner">Processing...</div>
+                  ) : resampledAudio && resampledAnalysis ? (
+                    <DisplayAudio
+                      analysis={resampledAnalysis}
+                      audioSrc={resampledAudio}
+                      setError={setError}
+                    />
+                  ) : (
+                    <div className="alert info">
+                      Adjust the sample rate slider to generate resampled audio
+                    </div>
+                  )}
+                </div>
+
+                {/* Corrected Audio - Only visible in position 1 */}
+                {carouselPosition === 1 && showCorrection && (
+                  <div className="comparison-side">
+                    <h3>Removing Aliasing Effect</h3>
+                    {isCorrecting ? (
+                      <div className="loading-spinner">Correcting...</div>
+                    ) : correctedAudio && correctedAnalysis ? (
+                      <DisplayAudio
+                        analysis={correctedAnalysis}
+                        audioSrc={correctedAudio}
+                        setError={setError}
+                      />
+                    ) : (
+                      <div className="alert info">
+                        Click "Correct Aliasing" to remove aliasing effects
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
