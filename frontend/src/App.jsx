@@ -1,8 +1,6 @@
 import Navbar from "./components/Navbar";
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Sidebar from "./components/Sidebar";
-
 import "./App.css";
 import Drone from "./pages/Drone/Drone";
 import Doppler from "./pages/Doppler/Doppler";
