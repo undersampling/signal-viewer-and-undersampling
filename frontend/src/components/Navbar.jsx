@@ -35,7 +35,7 @@ const Navbar = () => {
               className={`nav-link ${isActive("/")}`}
               onClick={closeMenu}
             >
-              <i className="fas fa-home"></i> Home
+              <i className="fas fa-home"></i>Home
             </Link>
           </li>
           <li>
@@ -44,7 +44,7 @@ const Navbar = () => {
               className={`nav-link ${isActive("/drone")}`}
               onClick={closeMenu}
             >
-              <i className="fa-solid fa-satellite-dish"></i> Drone Detection
+              <i className="fa-solid fa-satellite-dish"></i>Drone Detection
             </Link>
           </li>
           <li>
@@ -53,7 +53,7 @@ const Navbar = () => {
               className={`nav-link ${isActive("/human")}`}
               onClick={closeMenu}
             >
-              <i className="fa-solid fa-satellite-dish"></i> Human
+              <i className="fa-solid fa-satellite-dish"></i>Human
             </Link>
           </li>
           <li>
@@ -62,7 +62,7 @@ const Navbar = () => {
               className={`nav-link ${isActive("/eeg")}`}
               onClick={closeMenu}
             >
-              <i className="fa-solid fa-brain"></i> EEG Viewer
+              <i className="fa-solid fa-brain"></i>EEG Viewer
             </Link>
           </li>
           <li>
@@ -71,7 +71,7 @@ const Navbar = () => {
               className={`nav-link ${isActive("/ecg")}`}
               onClick={closeMenu}
             >
-              <i className="fa-solid fa-heart-pulse"></i> ECG Viewer
+              <i className="fa-solid fa-heart-pulse"></i>ECG Viewer
             </Link>
           </li>
           <li>
@@ -80,7 +80,7 @@ const Navbar = () => {
               className={`nav-link ${isActive("/sar")}`}
               onClick={closeMenu}
             >
-              <i className="fas fa-file-alt"></i> SAR
+              <i className="fas fa-file-alt"></i>SAR
             </Link>
           </li>
           <li>
@@ -89,7 +89,7 @@ const Navbar = () => {
               className={`nav-link ${isActive("/doppler")}`}
               onClick={closeMenu}
             >
-              <i className="fas fa-cog"></i> Doppler
+              <i className="fas fa-cog"></i>Doppler
             </Link>
           </li>
         </ul>

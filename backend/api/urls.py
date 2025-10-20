@@ -17,7 +17,8 @@ from .views.ecg_views import (
     ECGGraphView,
 )
 
-# This is the complete and organized "directory" for your API.
+
+
 urlpatterns = [
     # Drone URLs
     path('drone/detect/', DroneDetectionView.as_view(), name='detect-drone'),
