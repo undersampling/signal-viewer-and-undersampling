@@ -1,5 +1,4 @@
-
-
+# drone_views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -12,6 +11,14 @@ import os
 import uuid
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+
+# ===============================
+# --- Global In-Memory Cache ---
+# ===============================
+try:
+    from .doppler_views import AUDIO_STORAGE
+except ImportError:
+    AUDIO_STORAGE = {}
 
 # ===============================
 # --- Load Model Once Globally ---
@@ -32,8 +39,6 @@ except Exception as e:
 # ===============================
 class DroneDetectionView(APIView):
     parser_classes = (FormParser, MultiPartParser, JSONParser)
-
-
     def post(self, request):
         """Handle audio upload and run classification + visualization."""
         if model is None or feature_extractor is None:
@@ -50,13 +55,20 @@ class DroneDetectionView(APIView):
             temp_filename = fs.save(file_id, audio_file)
             temp_filepath = fs.path(temp_filename)
 
-            # --- Load only first few seconds (faster) ---
+            # === START: MP3 FIX (This is the updated block) ===
+
+            # 1. Get the original sample rate robustly (works for MP3s)
+            try:
+                original_sr = librosa.get_samplerate(temp_filepath)
+            except Exception as e:
+                print(f"Warning: Could not get original sample rate: {e}")
+                original_sr = 16000 # Fallback
+
+            # 2. Load and resample audio robustly (works for MP3s)
             MAX_DURATION = 5  # seconds
-            y_original, original_sr = librosa.load(temp_filepath, sr=None, mono=True, duration=MAX_DURATION)
-# Then resample for model if needed
-            y = librosa.resample(y_original, orig_sr=original_sr, target_sr=16000)
-            sr = 16000  # For model processing
-            # y, sr = librosa.load(temp_filepath, sr=16000, mono=True, duration=MAX_DURATION)
+            y, sr = librosa.load(temp_filepath, sr=16000, mono=True, duration=MAX_DURATION)
+            
+            # === END: MP3 FIX ===
 
             # --- Model Inference (no gradients) ---
             inputs = feature_extractor(y, sampling_rate=sr, return_tensors="pt")
@@ -77,7 +89,7 @@ class DroneDetectionView(APIView):
                 'spectrogram': spectrogram_data,
                 'initial_waveform': initial_waveform,
                 'freq_time_data': freq_time_data,
-                'original_rate': int(original_sr),
+                'original_rate': int(original_sr), # Now we can send this
             })
 
         except Exception as e:
@@ -106,53 +118,33 @@ class DroneDetectionView(APIView):
     # =======================================
     # --- Helper: Lightweight Spectrogram ---
     # =======================================
-
-# Assuming 'self' context provides 'sr' (sample rate) and 'y' (audio waveform)
-
     def _generate_spectrogram(self, y, sr):
         """
         Generate a decibel-scaled spectrogram (time vs frequency).
         Returns downsampled data for efficient JSON transfer, aiming for a visual match.
         """
         try:
-            # --- 1. Process the full audio for visualization (removed 2-second truncation) ---
-            # The original `y_short = y[: int(sr * 2)]` limited the plot to 2 seconds.
-            # By using the full `y`, the spectrogram can represent the entire audio duration,
-            # which is likely needed to match the visual patterns of the example image.
-
-            # --- 2. Compute STFT ---
-            # These parameters are generally suitable for speech spectrograms.
-            n_fft = 1024       # Number of FFT components, determines frequency resolution
-            hop_length = 256   # Number of samples between successive frames, determines time resolution
-            win_length = 1024  # Window length (usually same as n_fft)
+            n_fft = 1024 
+            hop_length = 256
+            win_length = 1024 
 
             stft = librosa.stft(y, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
             magnitude = np.abs(stft)
 
-            # --- 3. Convert amplitude to decibels ---
-            # `ref=np.max` normalizes the spectrogram by the peak power.
             db_spectrogram = librosa.amplitude_to_db(magnitude, ref=np.max)
 
-            # --- 4. Compute frequency and time axes ---
             freqs = librosa.fft_frequencies(sr=sr, n_fft=n_fft)
             times = librosa.frames_to_time(np.arange(db_spectrogram.shape[1]), sr=sr, hop_length=hop_length)
 
-            # --- 5. Limit frequency range (below 8000 Hz, consistent with original request) ---
-            # 8000 Hz is a common and effective upper limit for speech analysis, aligning with the visual detail expected.
             max_freq = 44000
             freq_mask = freqs <= max_freq
             freqs = freqs[freq_mask]
             db_spectrogram = db_spectrogram[freq_mask, :]
 
-            # --- 6. Normalize values (clip to desired dB range) ---
-            # Clipping helps to define the color range and corresponds to zmin/zmax in the frontend.
             db_spectrogram = np.clip(db_spectrogram, -80, 0)
 
-            # --- 7. Downsample for smaller JSON transfer and balanced visual quality ---
-            # We aim for a target number of points to keep the plot responsive and data payload manageable,
-            # while ensuring enough detail is retained to match the smooth appearance of the example image.
-            max_target_time_points = 700 # Roughly 700 pixels wide for a typical plot
-            max_target_freq_points = 250 # Roughly 250 pixels high for frequency detail
+            max_target_time_points = 700
+            max_target_freq_points = 250 
 
             time_step = max(1, len(times) // max_target_time_points)
             freq_step = max(1, len(freqs) // max_target_freq_points)
@@ -161,7 +153,6 @@ class DroneDetectionView(APIView):
             x = times[::time_step]
             y = freqs[::freq_step]
 
-            # --- 8. Return structured data ---
             return {
                 "z": z.tolist(),
                 "x": x.tolist(),
@@ -185,13 +176,10 @@ class DroneDetectionView(APIView):
         time_axis = np.linspace(start_time, end_time, len(chunk)).tolist()
         return {'time': time_axis, 'amplitude': chunk.tolist()}
 
-try:
-    from .doppler_views import AUDIO_STORAGE
-except ImportError:
-    AUDIO_STORAGE = {}
 
 # ===========================================
 # --- UNIFIED Waveform Chunk View ---
+# (This whole class is updated for caching)
 # ===========================================
 class WaveformChunkView(APIView):
     parser_classes = (FormParser, MultiPartParser, JSONParser)
@@ -205,24 +193,36 @@ class WaveformChunkView(APIView):
             return Response({'error': 'No file_id provided'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Check if this is an in-memory audio (Doppler)
-            if file_id in AUDIO_STORAGE:
-                return self._handle_memory_audio(file_id, position, view_seconds)
-            
-            # Otherwise, handle file-based audio (Drone)
-            return self._handle_file_audio(file_id, position, view_seconds)
+            # --- 1. Check if audio is already loaded in memory (Doppler or cached Drone) ---
+            if file_id not in AUDIO_STORAGE:
+                
+                # --- 2. If not, it must be a Drone file on disk. Load it. ---
+                fs = FileSystemStorage(location=settings.TEMP_FILE_ROOT)
+                if not fs.exists(file_id):
+                    return Response({'error': 'File not found or expired'}, status=status.HTTP_404_NOT_FOUND)
+                
+                # --- 3. Load ONCE from disk and store in memory cache ---
+                print(f"Loading {file_id} from disk into memory cache...")
+                # We load the *full file* here (duration=None) for scrolling
+                y, sr = librosa.load(fs.path(file_id), sr=16000, mono=True, duration=None)
+                AUDIO_STORAGE[file_id] = {'samples': y, 'sr': sr}
+
+            # --- 4. Now, handle the request using the unified in-memory data ---
+            return self._handle_chunk_request(file_id, position, view_seconds)
 
         except Exception as e:
             import traceback
             traceback.print_exc()
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def _handle_memory_audio(self, file_id, position, view_seconds):
-        """Handle in-memory audio (Doppler generated audio)"""
+    def _handle_chunk_request(self, file_id, position, view_seconds):
+        """
+        Handles chunking for ANY audio stored in AUDIO_STORAGE.
+        This single function now replaces both _handle_memory_audio and _handle_file_audio.
+        """
         stored = AUDIO_STORAGE[file_id]
         samples = stored['samples']
         sr = stored['sr']
-        duration = stored['duration']
         
         window_size = int(view_seconds * sr)
         step = int(window_size / 20)
@@ -233,35 +233,6 @@ class WaveformChunkView(APIView):
 
         end_index = new_position + window_size
         chunk = samples[new_position:end_index]
-        start_time = new_position / sr
-        end_time = start_time + len(chunk) / sr
-        time_axis = np.linspace(start_time, end_time, len(chunk)).tolist()
-
-        return Response({
-            'completed': False,
-            'time': time_axis,
-            'amplitude': chunk.tolist(),
-            'new_position': new_position,
-        })
-
-    def _handle_file_audio(self, file_id, position, view_seconds):
-        """Handle file-based audio (Drone detection uploaded files)"""
-        fs = FileSystemStorage(location=settings.TEMP_FILE_ROOT)
-        if not fs.exists(file_id):
-            return Response({'error': 'File not found or expired'}, status=status.HTTP_404_NOT_FOUND)
-
-        # Fast read (no full decoding)
-        y, sr = librosa.load(fs.path(file_id), sr=16000, mono=True)
-
-        window_size = int(view_seconds * sr)
-        step = int(window_size / 20)
-        new_position = position + step
-
-        if new_position + window_size > len(y):
-            return Response({'completed': True})
-
-        end_index = new_position + window_size
-        chunk = y[new_position:end_index]
         start_time = new_position / sr
         end_time = start_time + len(chunk) / sr
         time_axis = np.linspace(start_time, end_time, len(chunk)).tolist()
