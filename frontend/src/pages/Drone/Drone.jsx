@@ -43,7 +43,7 @@ const Drone = () => {
     setIsLoading(true);
     setError("");
     try {
-      const response = await apiService.detectDrone(file);
+      const response = await apiService.detectAudio(file);
       setAnalysis(response.data);
       if (response.data && response.data.original_rate) {
         setOriginalRate(response.data.original_rate);
@@ -112,7 +112,7 @@ const Drone = () => {
         { type: "audio/wav" }
       );
 
-      const analysisResponse = await apiService.detectDrone(downsampledFile);
+      const analysisResponse = await apiService.detectAudio(downsampledFile);
       setDownsampledAnalysis(analysisResponse.data);
     } catch (err) {
       console.error("Downsampled analysis error:", err);

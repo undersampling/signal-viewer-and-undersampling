@@ -113,7 +113,7 @@ const Doppler = () => {
         setPrediction(null);
         setPredError("");
         setShowComparison(false); // Hide comparison on new upload
-        
+
         // Reset all states related to passing simulation
         setPassingSrc(null);
         setPassingWaveform(null);
@@ -272,7 +272,7 @@ const Doppler = () => {
           { type: "audio/wav" }
         );
 
-        const analysisResponse = await apiService.detectDrone(downsampledFile);
+        const analysisResponse = await apiService.detectAudio(downsampledFile);
         const dataWithoutPrediction = { ...analysisResponse.data };
         delete dataWithoutPrediction.prediction;
 
@@ -288,7 +288,7 @@ const Doppler = () => {
   const handleDopplerDownsample = useCallback(async () => {
     // Use passingSrc if available, otherwise use dopplerSrc
     const sourceToUse = passingSrc || dopplerSrc;
-    
+
     if (!sourceToUse) {
       setError("Generate Doppler audio or simulate car passing first.");
       setIsDopplerDownsampling(false);
@@ -371,7 +371,9 @@ const Doppler = () => {
       if (newShowComparison) {
         // Use the appropriate original rate based on which source is available
         const sourceToUse = passingSrc || dopplerSrc;
-        const originalRate = passingSrc ? passingOriginalRate : dopplerOriginalRate;
+        const originalRate = passingSrc
+          ? passingOriginalRate
+          : dopplerOriginalRate;
         const initialRate = originalRate > 0 ? originalRate : 48000; // Adjust default if necessary
         setSliderValue(initialRate);
         setResampleRate(initialRate);
@@ -395,7 +397,13 @@ const Doppler = () => {
     if (showComparison && sourceToUse && resampleRate > 0) {
       handleDopplerDownsample();
     }
-  }, [resampleRate, showComparison, passingSrc, dopplerSrc, handleDopplerDownsample]);
+  }, [
+    resampleRate,
+    showComparison,
+    passingSrc,
+    dopplerSrc,
+    handleDopplerDownsample,
+  ]);
 
   // EFFECT 2: Debounce slider input
   useEffect(() => {
@@ -471,7 +479,7 @@ const Doppler = () => {
               </div>
               <div className="actions" style={{ alignSelf: "flex-end" }}>
                 <button
-                  className="btn primary"
+                  className="btn "
                   onClick={onGenerate}
                   disabled={!uploadSrc || loading}
                 >
@@ -484,13 +492,10 @@ const Doppler = () => {
               className="toolbar"
               style={{
                 marginTop: 8,
-                display: "flex",
-                gap: 12,
-                alignItems: "center",
               }}
             >
               <button
-                className="btn success"
+                className="btn"
                 onClick={onSimulate}
                 disabled={!uploadSrc || loading}
               >
@@ -649,7 +654,7 @@ const Doppler = () => {
             <div className="comparison-controls">
               {/* Toggle Comparison Visibility */}
               <button
-                className="btn btn-secondary"
+                className="btn"
                 onClick={toggleComparison}
                 disabled={isDopplerDownsampling || loading}
               >
@@ -661,22 +666,28 @@ const Doppler = () => {
               </button>
 
               {/* Resample Rate Slider */}
-              {showComparison && (passingOriginalRate || dopplerOriginalRate) && (
-                <div className="resample-control">
-                  <label>
-                    Sample Rate: <strong>{sliderValue} Hz</strong>
-                  </label>
-                  <input
-                    type="range"
-                    min="500" // Adjusted min value for more flexibility
-                    max={passingSrc ? passingOriginalRate : dopplerOriginalRate} // Set max to appropriate original rate
-                    step="1000"
-                    value={sliderValue || (passingSrc ? passingOriginalRate : dopplerOriginalRate)} // Use appropriate original rate if sliderValue is null
-                    onChange={(e) => setSliderValue(Number(e.target.value))}
-                    disabled={isDopplerDownsampling}
-                  />
-                </div>
-              )}
+              {showComparison &&
+                (passingOriginalRate || dopplerOriginalRate) && (
+                  <div className="resample-control">
+                    <label>
+                      Sample Rate: <strong>{sliderValue} Hz</strong>
+                    </label>
+                    <input
+                      type="range"
+                      min="500"
+                      max={
+                        passingSrc ? passingOriginalRate : dopplerOriginalRate
+                      } // Set max to appropriate original rate
+                      step="1000"
+                      value={
+                        sliderValue ||
+                        (passingSrc ? passingOriginalRate : dopplerOriginalRate)
+                      } // Use appropriate original rate if sliderValue is null
+                      onChange={(e) => setSliderValue(Number(e.target.value))}
+                      disabled={isDopplerDownsampling}
+                    />
+                  </div>
+                )}
             </div>
             {!showComparison ? (
               <>
@@ -691,8 +702,8 @@ const Doppler = () => {
               <div className="comparison-container">
                 <div className="comparison-side">
                   <h3>
-                    {passingSrc ? "Car Passing Simulation" : "Doppler Audio"} 
-                    ({passingSrc ? passingOriginalRate : dopplerOriginalRate} Hz)
+                    {passingSrc ? "Car Passing Simulation" : "Doppler Audio"}(
+                    {passingSrc ? passingOriginalRate : dopplerOriginalRate} Hz)
                   </h3>
                   <DisplayAudio
                     analysis={passingSrc ? passingAnalysis : dopplerAnalysis}
@@ -705,8 +716,8 @@ const Doppler = () => {
 
                 <div className="comparison-side">
                   <h3>
-                    Resampled {passingSrc ? "Car Passing" : "Doppler"} Audio 
-                    ({resampleRate} Hz)
+                    Resampled {passingSrc ? "Car Passing" : "Doppler"} Audio (
+                    {resampleRate} Hz)
                   </h3>
                   {isDopplerDownsampling ? (
                     <div className="loading-spinner">Processing...</div>

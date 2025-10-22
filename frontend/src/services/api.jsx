@@ -7,23 +7,23 @@ const apiClient = axios.create({
 });
 
 export const apiService = {
-  detectDrone: (audioFile) => {
+  detectAudio: (audioFile) => {
     const formData = new FormData();
     formData.append("audio", audioFile);
-    return apiClient.post("/drone/detect/", formData, {
+    return apiClient.post("audio/detect/", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
 
   getWaveformChunk: (fileId, position) => {
-    return apiClient.post("/drone/waveform-chunk/", {
+    return apiClient.post("/audio/waveform-chunk/", {
       file_id: fileId,
       position,
     });
   },
 
   resampleAudio: (fileId, newSr) => {
-    return apiClient.post("/drone/resample/", {
+    return apiClient.post("/audio/resample/", {
       file_id: fileId,
       new_sr: newSr,
     });
@@ -72,11 +72,12 @@ export const apiService = {
       },
     });
   },
-  // --- END OF UPDATED SECTION ---
+
   // SAR endpoints
   sarUpload: (dataUri) => {
     return apiClient.post("/sar/upload/", { contents: dataUri });
   },
+  
   // downsampling
   downsampleAudio: async (file, newRate) => {
     const formData = new FormData();

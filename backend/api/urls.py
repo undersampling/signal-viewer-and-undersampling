@@ -21,11 +21,10 @@ from .views.ecg_views import (
 )
 
 
-
 urlpatterns = [
     # Drone URLs
-    path('drone/detect/', DroneDetectionView.as_view(), name='detect-drone'),
-    path('drone/waveform-chunk/', WaveformChunkView.as_view(), name='waveform-chunk'),
+    path('audio/detect/', DroneDetectionView.as_view(), name='detect-drone'),
+    path('audio/waveform-chunk/', WaveformChunkView.as_view(), name='waveform-chunk'),
     
     # Doppler URLs
     path('doppler/upload/', upload_doppler, name='doppler-upload'),

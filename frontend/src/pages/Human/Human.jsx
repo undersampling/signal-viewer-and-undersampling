@@ -58,7 +58,7 @@ const Human = () => {
     setIsLoading(true);
     setError("");
     try {
-      const response = await apiService.detectDrone(file);
+      const response = await apiService.detectAudio(file);
       setAnalysis(response.data);
       if (response.data && response.data.original_rate) {
         setOriginalRate(response.data.original_rate);
@@ -125,7 +125,7 @@ const Human = () => {
         type: "audio/wav",
       });
 
-      const analysisResponse = await apiService.detectDrone(resampledFile);
+      const analysisResponse = await apiService.detectAudio(resampledFile);
       setResampledAnalysis(analysisResponse.data);
     } catch (err) {
       console.error("Resampled analysis error:", err);
@@ -187,7 +187,7 @@ const Human = () => {
         type: "audio/wav",
       });
 
-      const analysisResponse = await apiService.detectDrone(correctedFile);
+      const analysisResponse = await apiService.detectAudio(correctedFile);
       setCorrectedAnalysis(analysisResponse.data);
     } catch (err) {
       console.error("Corrected analysis error:", err);
