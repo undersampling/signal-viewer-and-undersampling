@@ -61,18 +61,18 @@ export const apiService = {
   },
 
   // Human removing aliasing
-  // correctAliasing: (audioFile) => {
-  //   const formData = new FormData();
-  //   // Ensure the field name matches the Django view
-  //   formData.append("audio_file", audioFile);
+  correctAliasing: (audioFile) => {
+    const formData = new FormData();
+    // Ensure this key 'audio_file' matches the backend view
+    formData.append("audio_file", audioFile);
 
-  //   return apiClient.post("/correct-aliasing/", formData, {
-  //     headers: {
-  //       "Content-Type": "multipart/form-data",
-  //     },
-  //   });
-  // },
-
+    return apiClient.post("/correct-aliasing/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+  // --- END OF UPDATED SECTION ---
   // SAR endpoints
   sarUpload: (dataUri) => {
     return apiClient.post("/sar/upload/", { contents: dataUri });

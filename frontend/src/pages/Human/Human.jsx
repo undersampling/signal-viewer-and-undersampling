@@ -152,7 +152,7 @@ const Human = () => {
       });
 
       // Call your API service for correction (adjust endpoint as needed)
-      const correctionResponse = await apiService.detectDrone(resampledFile);
+      const correctionResponse = await apiService.correctAliasing(resampledFile);
 
       let data;
       if (correctionResponse && correctionResponse.data) {

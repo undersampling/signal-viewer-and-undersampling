@@ -1,81 +1,90 @@
-from rest_framework.views import APIView
+# your_app/views/correction_aliasing.py
+
+from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
-import tempfile
+from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 import os
+import uuid
 import base64
-import logging
+import io
+import wave
+import numpy as np
 
-# Import your pre-loaded model
-from .correction_model import VOICEFIXER_MODEL, IS_CUDA_AVAILABLE
+# Import the core logic from your new model file
+try:
+    from .correction_model import fix_aliasing
+except ImportError:
+    # Handle potential import error if structure is different
+    print("Warning: Could not import fix_aliasing. Check your Python path.")
+    def fix_aliasing(in_path, out_path):
+        raise ImportError("fix_aliasing function not loaded")
 
-logger = logging.getLogger(__name__)
-
-class CorrectAliasingView(APIView):
+@api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
+def correct_aliasing_view(request):
     """
-    API endpoint to correct aliasing using VoiceFixer.
-    Expects a multipart-form upload with a file named 'audio_file'.
-    Returns a JSON object with a base64 data URI: {"corrected_audio": "data:..."}
+    Accepts an aliased audio file, corrects it using VoiceFixer,
+    and returns the corrected audio as a base64 data URI.
     """
-    parser_classes = (MultiPartParser, FormParser)
+    
+    audio_file = request.FILES.get('audio_file')
+    if not audio_file:
+        return Response({'error': 'No audio file provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-    def post(self, request, *args, **kwargs):
-        # Check if model is loaded
-        if not VOICEFIXER_MODEL:
-            logger.error("VoiceFixer model is not loaded. Cannot process request.")
-            return Response(
-                {"error": "Audio correction service is currently unavailable."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
+    fs = FileSystemStorage(location=settings.TEMP_FILE_ROOT)
+    temp_in_name = None
+    temp_out_path = None
 
-        # Check for file
-        if 'audio_file' not in request.data:
-            return Response({"error": "No audio file provided."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        audio_file = request.data['audio_file']
-        
-        input_path = None
-        output_path = None
-        
+    try:
+        # --- 1. Save temporary INPUT file ---
+        file_id = f"{uuid.uuid4()}{os.path.splitext(audio_file.name)[1]}"
+        temp_in_name = fs.save(file_id, audio_file)
+        temp_in_path = fs.path(temp_in_name)
+
+        # --- 2. Define temporary OUTPUT path ---
+        temp_out_name = f"{uuid.uuid4()}.wav"
+        temp_out_path = os.path.join(settings.TEMP_FILE_ROOT, temp_out_name)
+
+        # --- 3. Run the Model ---
+        # This will now raise ValueError if the file is too short
+        fix_aliasing(temp_in_path, temp_out_path)
+
+        # --- 4. Read the corrected (output) file ---
+        if not os.path.exists(temp_out_path):
+            return Response({'error': 'Correction failed, output file not created.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        with open(temp_out_path, 'rb') as f:
+            output_data = f.read()
+
+        # --- 5. Encode to Base64 ---
+        corrected_b64 = base64.b64encode(output_data).decode('utf-8')
+
+        # --- 6. Return Data URI ---
+        return Response({
+            'corrected_audio': f"data:audio/wav;base64,{corrected_b64}"
+        }, status=status.HTTP_200_OK)
+
+    # --- ADD THIS ERROR CATCH ---
+    except ValueError as ve:
+        # This is for errors we raised intentionally (like file too short)
+        print(f"Validation Error: {ve}")
+        return Response({'error': str(ve)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    except Exception as e:
+        # This is for unexpected server errors
+        import traceback
+        traceback.print_exc() # Print full error to server console
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    finally:
+        # --- 7. Cleanup ---
         try:
-            # 1. Create a temporary file for the uploaded audio
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_in:
-                for chunk in audio_file.chunks():
-                    tmp_in.write(chunk)
-                input_path = tmp_in.name
-            
-            # 2. Create a temporary path for the output file
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_out:
-                output_path = tmp_out.name
-            
-            logger.info(f"Running VoiceFixer on {input_path}")
-            
-            # 3. Run VoiceFixer model
-            VOICEFIXER_MODEL.restore(
-                input=input_path,
-                output=output_path,
-                cuda=IS_CUDA_AVAILABLE,
-                mode=0  # mode=0 for general speech restoration
-            )
-            
-            # 4. Read the enhanced file and convert to base64 data URI
-            with open(output_path, 'rb') as f:
-                encoded_audio = base64.b64encode(f.read()).decode('utf-8')
-            
-            # VoiceFixer outputs 44.1kHz WAV by default
-            data_uri = f"data:audio/wav;base64,{encoded_audio}"
-            
-            # 5. Return the successful response
-            return Response({"corrected_audio": data_uri}, status=status.HTTP_200_OK)
-            
+            if temp_in_name and fs.exists(temp_in_name):
+                fs.delete(temp_in_name)
+            if temp_out_path and os.path.exists(temp_out_path):
+                os.remove(temp_out_path)
         except Exception as e:
-            logger.error(f"Error during audio correction: {str(e)}")
-            return Response({"error": f"Error during correction: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        finally:
-            # 6. Clean up temporary files
-            if input_path and os.path.exists(input_path):
-                os.remove(input_path)
-            if output_path and os.path.exists(output_path):
-                os.remove(output_path)
+            print(f"Error during cleanup: {e}")
