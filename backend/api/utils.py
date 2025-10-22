@@ -483,7 +483,7 @@ def detect_ecg_cycles_simple(ecg_signal, fs):
 
 
 def generate_polar_ecg_cycles(data, fs, position, channels, zoom, purple_colors, lead_names=None):
-    """Generate polar graph with each ECG cycle drawn at 360 degrees - continuous, no offset"""
+    """Generate polar graph with each ECG cycle drawn at 360 degrees - continuous rotating"""
     try:
         total_samples = data.shape[1]
         window_samples = max(1, int(zoom * fs))
@@ -500,7 +500,7 @@ def generate_polar_ecg_cycles(data, fs, position, channels, zoom, purple_colors,
             peaks = detect_ecg_cycles_simple(segment, fs)
 
             if len(peaks) < 2:
-                # Fallback: treat as single cycle
+                # Fallback: treat as single cycle (0-360 degrees)
                 theta = np.linspace(0, 360, len(segment), endpoint=False).tolist()
                 r = segment.tolist()
 
@@ -513,21 +513,27 @@ def generate_polar_ecg_cycles(data, fs, position, channels, zoom, purple_colors,
                     'type': 'scatterpolar'
                 })
             else:
-                # Multiple cycles - continuous, no offset
+                # Multiple cycles - continuous rotation with each cycle = 360 degrees
                 all_r = []
                 all_theta = []
+                current_angle = 0  # Start at 0 degrees
 
                 for cycle_idx in range(len(peaks) - 1):
                     start_peak = peaks[cycle_idx]
                     end_peak = peaks[cycle_idx + 1]
                     cycle_data = segment[start_peak:end_peak]
 
-                    theta_cycle = np.linspace(0, 360, len(cycle_data), endpoint=False)
-                    r_cycle = cycle_data  # NO offset - continuous
+                    # Map this cycle to exactly 360 degrees
+                    # Current cycle spans from current_angle to current_angle + 360
+                    theta_cycle = np.linspace(current_angle, current_angle + 360,
+                                              len(cycle_data), endpoint=False)
+                    r_cycle = cycle_data
 
                     all_theta.extend(theta_cycle.tolist())
                     all_r.extend(r_cycle.tolist())
-                    # NO NaN separator - continuous line
+
+                    # Move to next cycle (continuous - no gap)
+                    current_angle += 360
 
                 traces.append({
                     'r': all_r,
@@ -541,4 +547,4 @@ def generate_polar_ecg_cycles(data, fs, position, channels, zoom, purple_colors,
         return traces
     except Exception as e:
         print(f"ECG cycles generation error: {e}")
-        raise  # Re-raise so the call
+        raise

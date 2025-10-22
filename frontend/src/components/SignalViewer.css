@@ -398,3 +398,12 @@
   color: var(--text-light);
   font-size: 1.1rem;
 }
+.upload-area.dragging {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  transform: scale(1.02);
+}
+
+.upload-area {
+  transition: all 0.3s ease;
+}

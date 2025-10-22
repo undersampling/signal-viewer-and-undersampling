@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Plot from "react-plotly.js";
 import { apiService } from "../services/api";
 import "./SignalViewer.css";
@@ -11,6 +11,7 @@ export default function SignalViewer({ isECG = false }) {
   const [prediction, setPrediction] = useState(null);
   const [playing, setPlaying] = useState(false);
   const [position, setPosition] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Control parameters
   const [speed, setSpeed] = useState(1);
@@ -25,6 +26,8 @@ export default function SignalViewer({ isECG = false }) {
   const [graphData, setGraphData] = useState(null);
   const [currentTime, setCurrentTime] = useState("");
   const [error, setError] = useState(null);
+
+  const fileInputRef = useRef(null);
 
   const maxChannels = isECG ? 12 : 8;
   const leadNames = isECG
@@ -79,8 +82,7 @@ export default function SignalViewer({ isECG = false }) {
   };
 
   // Handle file upload
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
+  const handleFileUpload = async (file) => {
     if (!file) return;
 
     setLoading(true);
@@ -109,6 +111,51 @@ export default function SignalViewer({ isECG = false }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.name.endsWith('.csv') || file.name.endsWith('.npy')) {
+        handleFileUpload(file);
+      } else {
+        alert('Please drop a .csv or .npy file');
+      }
+    }
+  };
+
+  const handleFileInputChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+
+  const handleUploadAreaClick = () => {
+    fileInputRef.current?.click();
   };
 
   // Handle WFDB upload (ECG only)
@@ -245,18 +292,32 @@ export default function SignalViewer({ isECG = false }) {
         </div>
 
         <div className="upload-section">
-          <div className="upload-area">
+          <input
+            ref={fileInputRef}
+            id="file-input"
+            type="file"
+            onChange={handleFileInputChange}
+            accept=".csv,.npy"
+            disabled={loading}
+            style={{ display: "none" }}
+          />
+
+          <div
+            className={`upload-area ${isDragging ? "dragging" : ""}`}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={handleUploadAreaClick}
+            style={{ cursor: loading ? "not-allowed" : "pointer" }}
+          >
             <i className="fas fa-cloud-upload-alt"></i>
-            <label htmlFor="file-input">
+            <label style={{ pointerEvents: "none" }}>
               Drag and drop or <span className="link">select file</span>
             </label>
-            <input
-              id="file-input"
-              type="file"
-              onChange={handleFileUpload}
-              accept=".csv,.npy"
-              disabled={loading}
-            />
+            <p style={{ fontSize: "0.9em", color: "#666", marginTop: "10px" }}>
+              Supported formats: .csv, .npy
+            </p>
           </div>
 
           {isECG && (
