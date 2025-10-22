@@ -1,3 +1,4 @@
+// Human.jsx
 import React, { useState, useEffect } from "react";
 import { apiService } from "../../services/api";
 import "../../components/Audio.css";
@@ -278,6 +279,7 @@ const Human = () => {
             </button>
 
             {/* Correction Button */}
+            {/* when cleck on correct aliasing  */}
             {showComparison && resampledAudio && (
               <button
                 className="btn "

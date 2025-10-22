@@ -60,6 +60,19 @@ export const apiService = {
     });
   },
 
+  // Human removing aliasing
+  // correctAliasing: (audioFile) => {
+  //   const formData = new FormData();
+  //   // Ensure the field name matches the Django view
+  //   formData.append("audio_file", audioFile);
+
+  //   return apiClient.post("/correct-aliasing/", formData, {
+  //     headers: {
+  //       "Content-Type": "multipart/form-data",
+  //     },
+  //   });
+  // },
+
   // SAR endpoints
   sarUpload: (dataUri) => {
     return apiClient.post("/sar/upload/", { contents: dataUri });
@@ -110,7 +123,7 @@ export const apiService = {
     polarMode,
     recChX,
     recChY,
-    undersampleFreq  // NEW parameter
+    undersampleFreq // NEW parameter
   ) =>
     apiClient.post("/eeg/graph/", {
       data,
@@ -124,7 +137,7 @@ export const apiService = {
       polar_mode: polarMode,
       rec_ch_x: recChX,
       rec_ch_y: recChY,
-      undersample_freq: undersampleFreq,  // NEW
+      undersample_freq: undersampleFreq, // NEW
     }),
 
   // ECG endpoints
@@ -159,7 +172,7 @@ export const apiService = {
     polarMode,
     recChX,
     recChY,
-    undersampleFreq  // NEW parameter
+    undersampleFreq // NEW parameter
   ) =>
     apiClient.post("/ecg/graph/", {
       data,
@@ -173,6 +186,6 @@ export const apiService = {
       polar_mode: polarMode,
       rec_ch_x: recChX,
       rec_ch_y: recChY,
-      undersample_freq: undersampleFreq,  // NEW
+      undersample_freq: undersampleFreq, // NEW
     }),
 };

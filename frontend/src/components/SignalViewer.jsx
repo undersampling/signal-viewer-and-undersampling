@@ -28,7 +28,20 @@ export default function SignalViewer({ isECG = false }) {
 
   const maxChannels = isECG ? 12 : 8;
   const leadNames = isECG
-    ? ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
+    ? [
+        "I",
+        "II",
+        "III",
+        "aVR",
+        "aVL",
+        "aVF",
+        "V1",
+        "V2",
+        "V3",
+        "V4",
+        "V5",
+        "V6",
+      ]
     : Array.from({ length: 19 }, (_, i) => `Ch ${i + 1}`);
 
   const API = isECG ? apiService.ecgDemo : apiService.eegDemo;
@@ -49,7 +62,12 @@ export default function SignalViewer({ isECG = false }) {
       });
       setPosition(0);
       setChannels(
-        Array.from({ length: Math.min(4, response.data.channels || response.data.leads) }, (_, i) => i)
+        Array.from(
+          {
+            length: Math.min(4, response.data.channels || response.data.leads),
+          },
+          (_, i) => i
+        )
       );
     } catch (error) {
       console.error("Error loading demo:", error);
@@ -143,7 +161,7 @@ export default function SignalViewer({ isECG = false }) {
           zoom,
           channels,
           undersampleFreq,
-          polarMode
+          polarMode,
         });
 
         const response = await graphAPI(
@@ -174,7 +192,10 @@ export default function SignalViewer({ isECG = false }) {
       } catch (error) {
         console.error("Error updating graph:", error);
         console.error("Error details:", error.response?.data);
-        setError("Error updating graph: " + (error.response?.data?.error || error.message));
+        setError(
+          "Error updating graph: " +
+            (error.response?.data?.error || error.message)
+        );
         setGraphData(null);
       }
     };
@@ -218,7 +239,9 @@ export default function SignalViewer({ isECG = false }) {
             <i className={isECG ? "fas fa-heart-pulse" : "fas fa-brain"}></i>
             {isECG ? "ECG" : "EEG"} Multi-Channel Viewer & Analyzer
           </h1>
-          <p>Advanced signal processing and analysis platform</p>
+          <h1 className="page-title">
+            Advanced signal processing and analysis platform
+          </h1>
         </div>
 
         <div className="upload-section">
@@ -252,18 +275,14 @@ export default function SignalViewer({ isECG = false }) {
               <button
                 onClick={handleWFDBUpload}
                 disabled={loading}
-                className="btn btn-success"
+                className="btn "
               >
                 <i className="fas fa-check-circle"></i> Load WFDB Files
               </button>
             </div>
           )}
 
-          <button
-            onClick={loadDemoData}
-            disabled={loading}
-            className="btn btn-primary"
-          >
+          <button onClick={loadDemoData} disabled={loading} className="btn ">
             <i className={isECG ? "fas fa-heartbeat" : "fas fa-flask"}></i>
             {loading ? "Loading..." : `Load Demo ${isECG ? "ECG" : "EEG"} Data`}
           </button>
@@ -282,14 +301,16 @@ export default function SignalViewer({ isECG = false }) {
       </div>
 
       {error && (
-        <div style={{
-          background: '#fee',
-          border: '2px solid #f88',
-          padding: '15px',
-          borderRadius: '8px',
-          marginBottom: '20px',
-          color: '#c00'
-        }}>
+        <div
+          style={{
+            background: "#fee",
+            border: "2px solid #f88",
+            padding: "15px",
+            borderRadius: "8px",
+            marginBottom: "20px",
+            color: "#c00",
+          }}
+        >
           <strong>Error:</strong> {error}
         </div>
       )}
@@ -520,7 +541,9 @@ export default function SignalViewer({ isECG = false }) {
         ) : (
           <div className="loading">
             {error ? `Error: ${error}` : "Loading graph..."}
-            <div style={{ marginTop: '10px', fontSize: '0.9em', color: '#666' }}>
+            <div
+              style={{ marginTop: "10px", fontSize: "0.9em", color: "#666" }}
+            >
               Check browser console for details
             </div>
           </div>

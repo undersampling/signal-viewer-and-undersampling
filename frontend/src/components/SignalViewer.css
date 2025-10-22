@@ -3,7 +3,14 @@
   margin: 0 auto;
   padding: 30px;
 }
-
+.page-title {
+  text-align: center;
+  color: #1e3c72;
+  margin: 2rem 0;
+  font-size: 2.2rem;
+  font-weight: 700;
+  /* text-shadow: 2px 2px 4px rgba(30, 60, 114, 0.1); */
+}
 .header {
   text-align: center;
   margin-bottom: 40px;
@@ -11,9 +18,12 @@
 
 .header h1 {
   font-size: 2.5rem;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-dark) 100%
+  );
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 10px;
   display: flex;
@@ -141,7 +151,11 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-dark) 100%
+  );
   color: white;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
@@ -152,7 +166,11 @@
 }
 
 .btn-success {
-  background: linear-gradient(135deg, var(--success) 0%, var(--success-light) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--success) 0%,
+    var(--success-light) 100%
+  );
   color: white;
   box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
 }
@@ -163,7 +181,11 @@
 }
 
 .btn-info {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-dark) 100%
+  );
   color: white;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
