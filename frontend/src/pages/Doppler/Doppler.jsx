@@ -88,6 +88,38 @@ const Doppler = () => {
     return new Blob([ab], { type: mimeString });
   }, []);
 
+  // Helper to download resampled audio with descriptive filename
+  const downloadResampledAudio = useCallback(() => {
+    if (!dopplerDownsampledAudio) {
+      setError("No resampled audio available to download");
+      return;
+    }
+
+    try {
+      const blob = dataURItoBlob(dopplerDownsampledAudio);
+      
+      // Generate filename with vi, vf, and source frequency
+      const vi = vStart.toFixed(1);
+      const vf = vEnd.toFixed(1);
+      const freq = fSource.toFixed(0);
+      const sampleRate = resampleRate || "unknown";
+      
+      const filename = `doppler_resampled_vi${vi}_vf${vf}_freq${freq}_sr${sampleRate}.wav`;
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download failed:", err);
+      setError("Failed to download resampled audio");
+    }
+  }, [dopplerDownsampledAudio, vStart, vEnd, fSource, resampleRate, dataURItoBlob]);
+
   // Handle file selection from AudioUploader
   const handleFileSelect = useCallback(async (file) => {
     const reader = new FileReader();
@@ -719,22 +751,32 @@ const Doppler = () => {
                     Resampled {passingSrc ? "Car Passing" : "Doppler"} Audio (
                     {resampleRate} Hz)
                   </h3>
-                  {isDopplerDownsampling ? (
-                    <div className="loading-spinner">Processing...</div>
-                  ) : dopplerDownsampledAudio && dopplerDownsampledAnalysis ? (
-                    <DisplayAudio
-                      analysis={dopplerDownsampledAnalysis}
-                      audioSrc={dopplerDownsampledAudio}
-                      setError={setError}
-                      zoomRange={sharedZoomRange}
-                      onZoomChange={handleZoomChange}
-                    />
-                  ) : (
-                    <div className="alert info">
-                      Adjust the sample rate slider to generate downsampled
-                      audio
-                    </div>
-                  )}
+                    {isDopplerDownsampling ? (
+                      <div className="loading-spinner">Processing...</div>
+                    ) : dopplerDownsampledAudio && dopplerDownsampledAnalysis ? (
+                      <>
+                        <DisplayAudio
+                          analysis={dopplerDownsampledAnalysis}
+                          audioSrc={dopplerDownsampledAudio}
+                          setError={setError}
+                          zoomRange={sharedZoomRange}
+                          onZoomChange={handleZoomChange}
+                        />
+                        <div style={{ marginTop: "10px", textAlign: "center" }}>
+                          <button
+                            onClick={downloadResampledAudio}
+                            className="btn primary"
+                          >
+                            📥 Download Resampled Audio
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="alert info">
+                        Adjust the sample rate slider to generate downsampled
+                        audio
+                      </div>
+                    )}
                 </div>
               </div>
             )}
