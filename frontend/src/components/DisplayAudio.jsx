@@ -3,7 +3,7 @@ import Plot from "react-plotly.js";
 import { apiService } from "../services/api";
 import "./Audio.css";
 
-function DisplayAudio({ analysis, audioSrc, setError }) {
+function DisplayAudio({ analysis, audioSrc, setError, zoomRange, onZoomChange }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [waveform, setWaveform] = useState(null);
@@ -108,11 +108,19 @@ function DisplayAudio({ analysis, audioSrc, setError }) {
             title: "Waveform (Amplitude vs. Time)",
             template: "plotly_white",
             margin: { l: 60, r: 20, t: 50, b: 60 },
-            xaxis: { title: "Time (s)" },
+            xaxis: { 
+              title: "Time (s)",
+              range: zoomRange || undefined
+            },
             yaxis: { title: "Amplitude" },
           }}
           style={{ width: "100%", height: "400px" }}
           config={{ responsive: true }}
+          onRelayout={(event) => {
+            if (onZoomChange && event['xaxis.range']) {
+              onZoomChange(event['xaxis.range']);
+            }
+          }}
         />
       )}
 

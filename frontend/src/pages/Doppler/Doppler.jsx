@@ -13,6 +13,8 @@ const Doppler = () => {
   const [passingSrc, setPassingSrc] = useState(null);
   const [passingWaveform, setPassingWaveform] = useState(null);
   const [passingFreq, setPassingFreq] = useState("");
+  const [passingAnalysis, setPassingAnalysis] = useState(null);
+  const [passingOriginalRate, setPassingOriginalRate] = useState(null);
   const [vStart, setVStart] = useState(0.0);
   const [vEnd, setVEnd] = useState(20.0);
   const [fSource, setFSource] = useState(440);
@@ -33,6 +35,7 @@ const Doppler = () => {
 
   // Comparison state
   const [showComparison, setShowComparison] = useState(false);
+  const [sharedZoomRange, setSharedZoomRange] = useState(null);
 
   // States for downsampling with debounce
   const [dopplerOriginalRate, setDopplerOriginalRate] = useState(null); // Initialized as null
@@ -110,6 +113,13 @@ const Doppler = () => {
         setPrediction(null);
         setPredError("");
         setShowComparison(false); // Hide comparison on new upload
+        
+        // Reset all states related to passing simulation
+        setPassingSrc(null);
+        setPassingWaveform(null);
+        setPassingFreq("");
+        setPassingAnalysis(null);
+        setPassingOriginalRate(null);
       } catch (err) {
         console.error(err);
         setError("Upload failed");
@@ -133,8 +143,40 @@ const Doppler = () => {
       setPassingSrc(data.src);
       setPassingWaveform(data.waveform);
       setPassingFreq(data.frequencies || "");
+
+      // Set analysis for DisplayAudio (similar to onGenerate)
+      const passingAnalysisData = {
+        initial_waveform: data.initial_waveform || { time: [], amplitude: [] },
+        spectrogram: data.spectrogram || null,
+        file_id: data.file_id || null,
+        original_rate: data.initial_waveform?.sr || null,
+      };
+
+      // Store the analysis data for passing simulation
+      setPassingAnalysis(passingAnalysisData);
+
+      // Also keep the old waveform format for the simple plot
+      if (data.initial_waveform?.time && data.initial_waveform?.amplitude) {
+        const timeArray = data.initial_waveform.time;
+        const ampArray = data.initial_waveform.amplitude;
+        setPassingWaveform({
+          preview: { t: timeArray, y: ampArray },
+          window: {
+            t: timeArray,
+            y: ampArray,
+            range: [
+              0,
+              timeArray.length > 0 ? timeArray[timeArray.length - 1] : 1,
+            ],
+          },
+        });
+      }
+
+      // Capture original sample rate for passing simulation
+      const detectedRate = data.initial_waveform?.sr || null;
+      setPassingOriginalRate(detectedRate);
     } catch (e) {
-      console.error(e);
+      console.error("Simulation error:", e);
       setError("Simulation failed");
     } finally {
       setLoading(false);
@@ -244,8 +286,11 @@ const Doppler = () => {
   );
 
   const handleDopplerDownsample = useCallback(async () => {
-    if (!dopplerSrc) {
-      setError("Generate Doppler audio first.");
+    // Use passingSrc if available, otherwise use dopplerSrc
+    const sourceToUse = passingSrc || dopplerSrc;
+    
+    if (!sourceToUse) {
+      setError("Generate Doppler audio or simulate car passing first.");
       setIsDopplerDownsampling(false);
       return;
     }
@@ -259,13 +304,13 @@ const Doppler = () => {
     setError("");
 
     try {
-      const audioBlob = dataURItoBlob(dopplerSrc);
-      const dopplerFile = new File([audioBlob], "doppler_audio.wav", {
+      const audioBlob = dataURItoBlob(sourceToUse);
+      const audioFile = new File([audioBlob], "audio.wav", {
         type: audioBlob.type,
       });
 
       const response = await apiService.downsampleAudio(
-        dopplerFile,
+        audioFile,
         resampleRate
       );
 
@@ -302,6 +347,7 @@ const Doppler = () => {
       setIsDopplerDownsampling(false);
     }
   }, [
+    passingSrc,
     dopplerSrc,
     resampleRate,
     dopplerOriginalRate,
@@ -309,26 +355,35 @@ const Doppler = () => {
     analyzeDopplerDownsampledAudio,
   ]);
 
+  const handleZoomChange = (zoomRange) => {
+    setSharedZoomRange(zoomRange);
+  };
+
   const toggleComparison = () => {
-    if (!dopplerSrc) {
-      setError("Please generate Doppler audio first.");
+    // Check if we have either dopplerSrc or passingSrc
+    if (!dopplerSrc && !passingSrc) {
+      setError("Please generate Doppler audio or simulate car passing first.");
       return;
     }
 
     setShowComparison((prev) => {
       const newShowComparison = !prev;
       if (newShowComparison) {
-        // Initialize slider with original rate or a default value
-        const initialRate =
-          dopplerOriginalRate > 0 ? dopplerOriginalRate : 48000; // Adjust default if necessary
+        // Use the appropriate original rate based on which source is available
+        const sourceToUse = passingSrc || dopplerSrc;
+        const originalRate = passingSrc ? passingOriginalRate : dopplerOriginalRate;
+        const initialRate = originalRate > 0 ? originalRate : 48000; // Adjust default if necessary
         setSliderValue(initialRate);
         setResampleRate(initialRate);
+        // Reset zoom when starting comparison
+        setSharedZoomRange(null);
       } else {
         // If disabling comparison, reset downsampled states
         setDopplerDownsampledAudio(null);
         setDopplerDownsampledAnalysis(null);
         setResampleRate(null);
         setSliderValue(null);
+        setSharedZoomRange(null);
       }
       return newShowComparison;
     });
@@ -336,14 +391,16 @@ const Doppler = () => {
 
   // EFFECT 1: Trigger downsample when resampleRate changes
   useEffect(() => {
-    if (showComparison && dopplerSrc && resampleRate > 0) {
+    const sourceToUse = passingSrc || dopplerSrc;
+    if (showComparison && sourceToUse && resampleRate > 0) {
       handleDopplerDownsample();
     }
-  }, [resampleRate, showComparison, dopplerSrc, handleDopplerDownsample]);
+  }, [resampleRate, showComparison, passingSrc, dopplerSrc, handleDopplerDownsample]);
 
   // EFFECT 2: Debounce slider input
   useEffect(() => {
-    if (!showComparison || !dopplerSrc) {
+    const sourceToUse = passingSrc || dopplerSrc;
+    if (!showComparison || !sourceToUse) {
       return;
     }
 
@@ -356,7 +413,7 @@ const Doppler = () => {
     return () => {
       clearTimeout(handler);
     };
-  }, [sliderValue, showComparison, dopplerSrc, resampleRate]);
+  }, [sliderValue, showComparison, passingSrc, dopplerSrc, resampleRate]);
 
   return (
     <div className="doppler-page" style={{ padding: 16 }}>
@@ -561,8 +618,33 @@ const Doppler = () => {
           <Plot {...plotFromWaveform(dopplerWaveform)} />
         </div>
 
+        <div className="panel" style={{ marginBottom: 16 }}>
+          <h4>Car Passing Simulation</h4>
+          <div style={{ color: "#28a745" }}>{passingFreq}</div>
+          <button
+            className="btn"
+            onClick={() => {
+              const a = document.getElementById("audio-passing");
+              if (a) {
+                a.pause();
+                a.currentTime = 0;
+                a.play();
+              }
+            }}
+            disabled={!passingSrc}
+          >
+            Play Car Passing
+          </button>
+          <audio
+            id="audio-passing"
+            controls={false}
+            src={passingSrc || undefined}
+          />
+          <Plot {...plotFromWaveform(passingWaveform)} />
+        </div>
+
         {/* Comparison Section with DisplayAudio */}
-        {dopplerAnalysis && (
+        {(dopplerAnalysis || passingAnalysis) && (
           <div className="results-container">
             <div className="comparison-controls">
               {/* Toggle Comparison Visibility */}
@@ -579,7 +661,7 @@ const Doppler = () => {
               </button>
 
               {/* Resample Rate Slider */}
-              {showComparison && dopplerOriginalRate && (
+              {showComparison && (passingOriginalRate || dopplerOriginalRate) && (
                 <div className="resample-control">
                   <label>
                     Sample Rate: <strong>{sliderValue} Hz</strong>
@@ -587,9 +669,9 @@ const Doppler = () => {
                   <input
                     type="range"
                     min="500" // Adjusted min value for more flexibility
-                    max={dopplerOriginalRate > 0 ? dopplerOriginalRate : 48000} // Set max to dopplerOriginalRate
+                    max={passingSrc ? passingOriginalRate : dopplerOriginalRate} // Set max to appropriate original rate
                     step="1000"
-                    value={sliderValue || dopplerOriginalRate} // Use dopplerOriginalRate if sliderValue is null
+                    value={sliderValue || (passingSrc ? passingOriginalRate : dopplerOriginalRate)} // Use appropriate original rate if sliderValue is null
                     onChange={(e) => setSliderValue(Number(e.target.value))}
                     disabled={isDopplerDownsampling}
                   />
@@ -600,24 +682,32 @@ const Doppler = () => {
               <>
                 <h3>Simulate Car Pass</h3>
                 <DisplayAudio
-                  analysis={dopplerAnalysis}
-                  audioSrc={dopplerSrc}
+                  analysis={passingAnalysis || dopplerAnalysis}
+                  audioSrc={passingSrc || dopplerSrc}
                   setError={setError}
                 />
               </>
             ) : (
               <div className="comparison-container">
                 <div className="comparison-side">
-                  <h3>Doppler Audio ({dopplerOriginalRate} Hz)</h3>
+                  <h3>
+                    {passingSrc ? "Car Passing Simulation" : "Doppler Audio"} 
+                    ({passingSrc ? passingOriginalRate : dopplerOriginalRate} Hz)
+                  </h3>
                   <DisplayAudio
-                    analysis={dopplerAnalysis}
-                    audioSrc={dopplerSrc}
+                    analysis={passingSrc ? passingAnalysis : dopplerAnalysis}
+                    audioSrc={passingSrc || dopplerSrc}
                     setError={setError}
+                    zoomRange={sharedZoomRange}
+                    onZoomChange={handleZoomChange}
                   />
                 </div>
 
                 <div className="comparison-side">
-                  <h3>Resampled Doppler Audio ({resampleRate} Hz)</h3>
+                  <h3>
+                    Resampled {passingSrc ? "Car Passing" : "Doppler"} Audio 
+                    ({resampleRate} Hz)
+                  </h3>
                   {isDopplerDownsampling ? (
                     <div className="loading-spinner">Processing...</div>
                   ) : dopplerDownsampledAudio && dopplerDownsampledAnalysis ? (
@@ -625,6 +715,8 @@ const Doppler = () => {
                       analysis={dopplerDownsampledAnalysis}
                       audioSrc={dopplerDownsampledAudio}
                       setError={setError}
+                      zoomRange={sharedZoomRange}
+                      onZoomChange={handleZoomChange}
                     />
                   ) : (
                     <div className="alert info">

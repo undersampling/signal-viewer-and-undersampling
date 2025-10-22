@@ -983,6 +983,19 @@ def simulate_passing(request):
         src = _write_wav_data_uri(simulation, sr)
         store = {'sr': sr, 'samples': simulation.tolist(), 'duration': len(simulation) / sr}
         fig = _make_waveform(store)
+        
+        # Generate file ID and store data for chunk streaming
+        file_id = str(uuid.uuid4())
+        AUDIO_STORAGE[file_id] = {
+            'samples': simulation,
+            'sr': sr,
+            'duration': len(simulation) / sr
+        }
+        
+        # Compute full analysis for DisplayAudio
+        initial_waveform, spectrogram = _compute_full_analysis(simulation, sr)
+        
+        status_msg = f"Car passing simulation: v_i={v_start} m/s → v_f={v_end} m/s"
         freq_msg = ''
         if f_source is not None:
             f_obs_start = f_source * (SPEED_OF_SOUND / (SPEED_OF_SOUND - v_start + EPS))
@@ -992,7 +1005,19 @@ def simulate_passing(request):
                 f"Start obs freq: {f_obs_start:.1f} Hz · End of accel: {f_obs_end_accel:.1f} Hz · "
                 f"Receding approx: {f_obs_recede:.1f} Hz"
             )
-        return Response({'store': store, 'src': src, 'waveform': fig, 'frequencies': freq_msg})
+        
+        # Return data in the format expected by DisplayAudio
+        return Response({
+            'store': store, 
+            'src': src, 
+            'waveform': fig, 
+            'frequencies': freq_msg,
+            'initial_waveform': initial_waveform,
+            'spectrogram': spectrogram,
+            'file_id': file_id,
+            'status': status_msg,
+            'observed': freq_msg
+        })
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
