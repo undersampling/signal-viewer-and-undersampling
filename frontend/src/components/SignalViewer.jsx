@@ -139,10 +139,10 @@ export default function SignalViewer({ isECG = false }) {
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       const file = files[0];
-      if (file.name.endsWith('.csv') || file.name.endsWith('.npy')) {
+      if (file.name.endsWith(".csv") || file.name.endsWith(".npy")) {
         handleFileUpload(file);
       } else {
-        alert('Please drop a .csv or .npy file');
+        alert("Please drop a .csv or .npy file");
       }
     }
   };
@@ -287,7 +287,7 @@ export default function SignalViewer({ isECG = false }) {
             {isECG ? "ECG" : "EEG"} Multi-Channel Viewer & Analyzer
           </h1>
           <h1 className="page-title">
-            Advanced signal processing and analysis platform
+            {/* Advanced signal processing and analysis platform */}
           </h1>
         </div>
 
@@ -567,14 +567,11 @@ export default function SignalViewer({ isECG = false }) {
       </div>
 
       <div className="playback-controls">
-        <button
-          onClick={() => setPlaying(!playing)}
-          className="btn btn-success"
-        >
+        <button onClick={() => setPlaying(!playing)} className="btn">
           <i className={`fas fa-${playing ? "pause" : "play"}`}></i>
           {playing ? "Pause" : "Play"}
         </button>
-        <button onClick={() => setPosition(0)} className="btn btn-info">
+        <button onClick={() => setPosition(0)} className="btn">
           <i className="fas fa-redo"></i> Reset
         </button>
         <span className="time-display">{currentTime}</span>
