@@ -25,11 +25,7 @@ except ImportError:
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def correct_aliasing_view(request):
-    """
-    Accepts an aliased audio file, corrects it using VoiceFixer,
-    and returns the corrected audio as a base64 data URI.
-    """
-    
+
     audio_file = request.FILES.get('audio_file')
     if not audio_file:
         return Response({'error': 'No audio file provided'}, status=status.HTTP_400_BAD_REQUEST)
