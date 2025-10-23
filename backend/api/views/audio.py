@@ -1,9 +1,4 @@
 # audio.py
-"""
-General audio utilities and common functions used across different audio processing views.
-Includes audio I/O, conversion, visualization helpers, and storage management.
-"""
-
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
@@ -40,15 +35,7 @@ AUDIO_STORAGE = {}
 # ===============================
 
 def parse_wav_from_data_uri(contents):
-    """
-    Parse a data URI containing WAV audio into samples and metadata.
-    
-    Args:
-        contents: Data URI string (e.g., "data:audio/wav;base64,...")
-    
-    Returns:
-        dict: {'sr': sample_rate, 'samples': np.array, 'duration': float}
-    """
+
     header, b64 = contents.split(',', 1)
     audio_bytes = base64.b64decode(b64)
     bio = io.BytesIO(audio_bytes)
@@ -71,16 +58,7 @@ def parse_wav_from_data_uri(contents):
 
 
 def write_wav_data_uri(samples, sr):
-    """
-    Convert audio samples to a data URI string.
-    
-    Args:
-        samples: np.array of audio samples (float32, normalized)
-        sr: Sample rate
-    
-    Returns:
-        str: Data URI string
-    """
+
     max_a = np.max(np.abs(samples)) + EPS
     scaled = samples / max_a if max_a > 0 else samples
     int16 = (scaled * 32767).astype(np.int16)
@@ -90,16 +68,7 @@ def write_wav_data_uri(samples, sr):
 
 
 def audio_to_base64(signal, sample_rate):
-    """
-    Convert audio signal to base64-encoded WAV format.
-    
-    Args:
-        signal: np.array of audio samples (float, normalized)
-        sample_rate: Sample rate
-    
-    Returns:
-        str: Base64-encoded audio data
-    """
+
     buffer = io.BytesIO()
     with wave.open(buffer, 'wb') as wf:
         wf.setnchannels(1)
@@ -116,20 +85,6 @@ def audio_to_base64(signal, sample_rate):
 # ===============================
 
 def compute_spectrogram(samples, sr, n_fft=2048, hop_length=512, n_mels=128, fmax=8000):
-    """
-    Compute mel-spectrogram for audio visualization.
-    
-    Args:
-        samples: Audio samples
-        sr: Sample rate
-        n_fft: FFT window size
-        hop_length: Number of samples between successive frames
-        n_mels: Number of mel bands
-        fmax: Maximum frequency
-    
-    Returns:
-        dict: {'z': spectrogram_db, 'x': times, 'y': frequencies} or None
-    """
     if not librosa:
         return None
     
@@ -153,18 +108,8 @@ def compute_spectrogram(samples, sr, n_fft=2048, hop_length=512, n_mels=128, fma
         'y': freqs.tolist()
     }
 
-
+# for the 2 signnls together.
 def compute_full_analysis(samples, sr):
-    """
-    Compute complete waveform and spectrogram data for DisplayAudio component.
-    
-    Args:
-        samples: Audio samples
-        sr: Sample rate
-    
-    Returns:
-        tuple: (initial_waveform, spectrogram)
-    """
     duration = len(samples) / sr
     time = np.linspace(0, duration, len(samples))
     
@@ -180,16 +125,6 @@ def compute_full_analysis(samples, sr):
 
 
 def make_waveform(store, play_pos=None):
-    """
-    Generate waveform visualization data with preview and window views.
-    
-    Args:
-        store: Dict containing 'sr', 'samples', 'duration'
-        play_pos: Current playback position (optional)
-    
-    Returns:
-        dict: {'preview': {...}, 'window': {...}}
-    """
     sr, samples, duration = store['sr'], np.array(store['samples']), store['duration']
     max_preview_points, window_width = 4000, 3.0
     total_points = len(samples)
@@ -222,16 +157,6 @@ def make_waveform(store, play_pos=None):
 # ===============================
 
 def store_audio(samples, sr):
-    """
-    Store audio in memory and return a file ID for later retrieval.
-    
-    Args:
-        samples: Audio samples
-        sr: Sample rate
-    
-    Returns:
-        str: Unique file ID
-    """
     file_id = str(uuid.uuid4())
     AUDIO_STORAGE[file_id] = {
         'samples': samples if isinstance(samples, np.ndarray) else np.array(samples),
@@ -242,20 +167,11 @@ def store_audio(samples, sr):
 
 
 def get_audio(file_id):
-    """
-    Retrieve audio from memory storage.
-    
-    Args:
-        file_id: File ID
-    
-    Returns:
-        dict: {'samples': np.array, 'sr': int, 'duration': float} or None
-    """
+
     return AUDIO_STORAGE.get(file_id)
 
 
 def clear_audio(file_id):
-    """Remove audio from memory storage."""
     if file_id in AUDIO_STORAGE:
         del AUDIO_STORAGE[file_id]
 
@@ -265,18 +181,7 @@ def clear_audio(file_id):
 # ===============================
 
 def load_audio_file(file_path, sr=None, mono=True, duration=None):
-    """
-    Load audio from a file (supports WAV, MP3, etc.).
-    
-    Args:
-        file_path: Path to audio file
-        sr: Target sample rate (None = keep original)
-        mono: Convert to mono
-        duration: Maximum duration to load
-    
-    Returns:
-        tuple: (samples, sample_rate)
-    """
+
     if not librosa:
         raise ImportError("librosa is required for loading audio files")
     
@@ -290,10 +195,7 @@ def load_audio_file(file_path, sr=None, mono=True, duration=None):
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def downsample_audio(request):
-    """
-    API endpoint to downsample audio files.
-    Supports WAV and MP3 formats.
-    """
+
     try:
         file = request.FILES.get('file')
         new_rate_str = request.data.get('new_rate', '0')

@@ -38,16 +38,7 @@ except Exception as e:
 # ===============================
 
 def generate_spectrogram(y, sr):
-    """
-    Generate a decibel-scaled spectrogram optimized for drone detection visualization.
-    
-    Args:
-        y: Audio samples
-        sr: Sample rate
-    
-    Returns:
-        dict: {'z': magnitude_db, 'x': times, 'y': frequencies}
-    """
+
     try:
         n_fft = 1024 
         hop_length = 256
@@ -92,16 +83,7 @@ def generate_spectrogram(y, sr):
 
 
 def generate_freq_time(y, sr):
-    """
-    Fast frequency-over-time estimation using YIN pitch detection.
-    
-    Args:
-        y: Audio samples
-        sr: Sample rate
-    
-    Returns:
-        dict: {'time': times, 'frequency': frequencies}
-    """
+
     try:
         # Fast pitch detection using YIN
         f0 = librosa.yin(y, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'))
@@ -120,18 +102,7 @@ def generate_freq_time(y, sr):
 
 
 def generate_waveform_chunk(y, sr, start_index, view_seconds=2.0):
-    """
-    Generate a chunk of waveform data for visualization.
-    
-    Args:
-        y: Audio samples
-        sr: Sample rate
-        start_index: Starting sample index
-        view_seconds: Duration of view window
-    
-    Returns:
-        dict: {'time': times, 'amplitude': amplitudes}
-    """
+   
     window_size = int(view_seconds * sr)
     end_index = start_index + window_size
     chunk = y[start_index:end_index]
@@ -146,7 +117,6 @@ def generate_waveform_chunk(y, sr, start_index, view_seconds=2.0):
 # ===============================
 
 class DroneDetectionView(APIView):
-    """Handle audio upload and run drone classification with visualization."""
     
     parser_classes = (FormParser, MultiPartParser, JSONParser)
     
@@ -211,11 +181,7 @@ class DroneDetectionView(APIView):
 
 
 class WaveformChunkView(APIView):
-    """
-    Unified waveform chunk streaming for both Doppler and Drone audio.
-    Uses in-memory cache (AUDIO_STORAGE) for efficiency.
-    """
-    
+
     parser_classes = (FormParser, MultiPartParser, JSONParser)
 
     def post(self, request):

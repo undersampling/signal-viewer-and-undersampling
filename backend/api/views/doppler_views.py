@@ -1,9 +1,4 @@
 # doppler_views.py
-"""
-Doppler effect simulation and prediction endpoints.
-Handles audio transformation based on velocity changes.
-"""
-
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
@@ -43,7 +38,7 @@ MODEL_LOAD_ERROR = None
 
 
 def _lazy_load_model():
-    """Load Doppler prediction model on first use."""
+   
     global REG_MODEL, SPECTROGRAM_WIDTH, MODEL_LOAD_ERROR
     
     if REG_MODEL is not None:
@@ -68,18 +63,7 @@ def _lazy_load_model():
 # ===============================
 
 def apply_doppler_effect(audio, sr, v_start, v_end):
-    """
-    Apply Doppler effect to audio based on velocity change.
-    
-    Args:
-        audio: Audio samples
-        sr: Sample rate
-        v_start: Initial velocity (m/s)
-        v_end: Final velocity (m/s)
-    
-    Returns:
-        np.array: Doppler-shifted audio
-    """
+
     n_samples = len(audio)
     if n_samples == 0:
         return audio.astype(np.float32)
@@ -108,33 +92,14 @@ def apply_doppler_effect(audio, sr, v_start, v_end):
 
 
 def linear_envelope(length, start_level=0.0, end_level=1.0):
-    """
-    Create a linear amplitude envelope.
-    
-    Args:
-        length: Number of samples
-        start_level: Starting amplitude (0-1)
-        end_level: Ending amplitude (0-1)
-    
-    Returns:
-        np.array: Envelope values
-    """
+
     if length <= 0:
         return np.array([], dtype=np.float32)
     return np.linspace(start_level, end_level, length, dtype=np.float32)
 
 
 def apply_amplitude_envelope(audio, envelope):
-    """
-    Apply amplitude envelope to audio.
-    
-    Args:
-        audio: Audio samples
-        envelope: Envelope values (same length or will be interpolated)
-    
-    Returns:
-        np.array: Audio with envelope applied
-    """
+
     if len(audio) != len(envelope):
         envelope = np.interp(
             np.linspace(0, 1, len(audio)), 
@@ -145,17 +110,7 @@ def apply_amplitude_envelope(audio, envelope):
 
 
 def compute_observed_frequencies(f_source, v_start, v_end):
-    """
-    Calculate observed frequencies based on Doppler effect.
-    
-    Args:
-        f_source: Source frequency (Hz)
-        v_start: Initial velocity (m/s)
-        v_end: Final velocity (m/s)
-    
-    Returns:
-        tuple: (f_obs_start, f_obs_end)
-    """
+
     f_obs_start = f_source * (SPEED_OF_SOUND / (SPEED_OF_SOUND - v_start + EPS))
     f_obs_end = f_source * (SPEED_OF_SOUND / (SPEED_OF_SOUND - v_end + EPS))
     return f_obs_start, f_obs_end
@@ -168,7 +123,6 @@ def compute_observed_frequencies(f_source, v_start, v_end):
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def upload_doppler(request):
-    """Upload audio file for Doppler processing."""
     try:
         # Accept either multipart file or JSON data URI
         if 'audio' in request.FILES:
@@ -200,7 +154,6 @@ def upload_doppler(request):
 @api_view(['POST'])
 @parser_classes([JSONParser])
 def generate_doppler(request):
-    """Generate Doppler-shifted audio."""
     try:
         contents = request.data.get('contents')
         v_start = float(request.data.get('v_start'))
@@ -261,7 +214,6 @@ def generate_doppler(request):
 @api_view(['POST'])
 @parser_classes([JSONParser])
 def simulate_passing(request):
-    """Simulate a car passing with approach and recede phases."""
     try:
         contents = request.data.get('contents')
         v_start = float(request.data.get('v_start'))
@@ -354,7 +306,7 @@ def simulate_passing(request):
 @api_view(['POST'])
 @parser_classes([JSONParser])
 def predict_doppler(request):
-    """Predict Doppler parameters from audio using ML model."""
+
     try:
         if not librosa or not tf:
             return Response(
