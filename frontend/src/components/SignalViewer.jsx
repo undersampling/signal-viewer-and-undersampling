@@ -26,7 +26,7 @@ export default function SignalViewer({ isECG = false }) {
   const [graphData, setGraphData] = useState(null);
   const [currentTime, setCurrentTime] = useState("");
   const [error, setError] = useState(null);
-
+  const [displayedFs, setDisplayedFs] = useState(null);
   const fileInputRef = useRef(null);
 
   const maxChannels = isECG ? 12 : 8;
@@ -59,8 +59,10 @@ export default function SignalViewer({ isECG = false }) {
       const response = await API();
       console.log("Demo data loaded:", response.data);
       setSignalData(response.data);
+      setDisplayedFs(response.data.fs);
       setPrediction({
-        label: response.data.prediction,
+        // *** MODIFIED: Use the full 'status' text for the label ***
+        label: response.data.status,
         confidence: response.data.confidence,
       });
       setPosition(0);
@@ -91,8 +93,10 @@ export default function SignalViewer({ isECG = false }) {
       const response = await uploadAPI(file);
       console.log("File uploaded:", response.data);
       setSignalData(response.data);
+      setDisplayedFs(response.data.fs);
       setPrediction({
-        label: response.data.prediction,
+        // *** MODIFIED: Use the full 'status' text for the label ***
+        label: response.data.status,
         confidence: response.data.confidence,
       });
       setPosition(0);
@@ -176,8 +180,10 @@ export default function SignalViewer({ isECG = false }) {
       const response = await apiService.ecgWFDB(datFile, heaFile);
       console.log("WFDB uploaded:", response.data);
       setSignalData(response.data);
+      setDisplayedFs(response.data.fs);
       setPrediction({
-        label: response.data.prediction,
+        // *** MODIFIED: Use the full 'status' text for the label ***
+        label: response.data.status,
         confidence: response.data.confidence,
       });
       setPosition(0);
@@ -231,6 +237,18 @@ export default function SignalViewer({ isECG = false }) {
         if (response.data && response.data.traces) {
           setGraphData(response.data.traces);
           setCurrentTime(response.data.current_time);
+
+          if (response.data.prediction_status !== undefined) {
+            setPrediction({
+              label: response.data.prediction_status,
+              confidence: response.data.prediction_confidence,
+            });
+          }
+
+          // *** NEW: Update displayed FS from graph response ***
+          if (response.data.new_fs !== undefined) {
+            setDisplayedFs(response.data.new_fs);
+          }
           setError(null);
         } else {
           console.error("Invalid response format:", response.data);
@@ -409,7 +427,10 @@ export default function SignalViewer({ isECG = false }) {
         <div className="stat-card">
           <i className="fas fa-tachometer-alt"></i>
           <div className="stat-content">
-            <div className="stat-value">{signalData.fs} Hz</div>
+            <div className="stat-value">
+              {/* *** MODIFIED: Use displayedFs *** */}
+              {displayedFs || signalData.fs} Hz
+            </div>
             <div className="stat-label">Sampling Rate</div>
           </div>
         </div>
@@ -490,7 +511,7 @@ export default function SignalViewer({ isECG = false }) {
 
           <div className="slider-group">
             <label>
-              Nyquist Undersampling: {undersampleFreq || signalData.fs} Hz
+              Nyquist Undersampling: {displayedFs || signalData.fs} Hz
             </label>
             <input
               type="range"
@@ -500,6 +521,9 @@ export default function SignalViewer({ isECG = false }) {
               value={undersampleFreq || signalData.fs}
               onChange={(e) => {
                 const val = parseInt(e.target.value);
+                // *** NEW: Immediately update displayedFs for a responsive slider ***
+                setDisplayedFs(val);
+                // Set to null if it's back to the original value
                 setUndersampleFreq(val === signalData.fs ? null : val);
               }}
             />

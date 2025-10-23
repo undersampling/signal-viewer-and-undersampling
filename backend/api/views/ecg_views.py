@@ -224,7 +224,9 @@ class EEGGraphView(APIView):
                 print(f"Applying undersampling from {fs}Hz to {undersample_freq}Hz")
                 data, fs = apply_undersampling(data, fs, undersample_freq)
                 print(f"After undersampling - Data shape: {data.shape}, New FS: {fs}")
-
+            # *** NEW: Run prediction on the (potentially) downsampled data ***
+            pred, conf = predict_eeg_abnormality(data)
+            status_text = EEG_ABNORMALITY_TYPES.get(pred, pred)
             current_time = f"⏱️ {position:.2f}s / {data.shape[1] / fs:.2f}s"
 
             if viewer_type == 'continuous':
@@ -289,7 +291,11 @@ class EEGGraphView(APIView):
                 'traces': traces,
                 'layout': layout,
                 'current_time': current_time,
-                'success': True
+                'success': True, 
+                'prediction_label': pred,
+                'prediction_confidence': conf,
+                'prediction_status': status_text,
+                'new_fs': int(fs)
             }
 
             return Response(response_data)
@@ -335,7 +341,10 @@ class ECGGraphView(APIView):
             if undersample_freq is not None and undersample_freq > 0 and undersample_freq < fs:
                 print(f"Applying undersampling from {fs}Hz to {undersample_freq}Hz")
                 data, fs = apply_undersampling(data, fs, undersample_freq)
-                print(f"After undersampling - Data shape: {data.shape}, New FS: {fs}")
+                print(f"After undersampling - Data shape: {data.shape}, New FS: {fs}")  
+                
+            pred, conf = predict_ecg_abnormality(data)
+            status_text = ECG_ABNORMALITY_TYPES.get(pred, pred)
 
             current_time = f"⏱️ {position:.2f}s / {data.shape[1] / fs:.2f}s"
 
@@ -403,7 +412,10 @@ class ECGGraphView(APIView):
                 'traces': traces,
                 'layout': layout,
                 'current_time': current_time,
-                'success': True
+                'success': True, 'prediction_label': pred,
+                'prediction_confidence': conf,
+                'prediction_status': status_text,
+                'new_fs': int(fs)
             }
 
             return Response(response_data)

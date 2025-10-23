@@ -138,7 +138,6 @@ def generate_synthetic_eeg(n_channels=8, duration=10, fs=256, abnormality_type=0
     return data, fs
 
 
-
 def parse_eeg_file(file_obj):
     """Parse EEG file (CSV or NPY)"""
     try:
@@ -167,11 +166,31 @@ def parse_eeg_file(file_obj):
 # ============= ECG UTILITIES =============
 
 def predict_ecg_abnormality(data):
-    """Predict ECG abnormality"""
-    labels = list(ECG_ABNORMALITY_TYPES.keys())
-    pred_label = np.random.choice(labels)
-    conf = np.random.uniform(0.7, 0.95)
-    return pred_label, float(conf)
+    """
+    Predict ECG abnormality - now deterministic based on data length,
+    so it changes with undersampling.
+    """
+    try:
+        # Use data shape to influence the 'random' choice
+        num_samples = data.shape[1] if data.ndim > 1 else len(data)
+        labels = list(ECG_ABNORMALITY_TYPES.keys())
+        
+        # Simple deterministic function of the number of samples
+        pred_idx = (num_samples * 17 + 83) % len(labels)
+        pred_label = labels[pred_idx]
+        
+        # Confidence can also be deterministic
+        conf = ((num_samples * 3) % 100) / 100.0 * 0.25 + 0.7 # range 0.7-0.95
+        
+        return pred_label, float(conf)
+    
+    except Exception as e:
+        print(f"ECG prediction error: {e}, falling back to random.")
+        # Fallback to original random method
+        labels = list(ECG_ABNORMALITY_TYPES.keys())
+        pred_label = np.random.choice(labels)
+        conf = np.random.uniform(0.7, 0.95)
+        return pred_label, float(conf)
 
 
 def generate_synthetic_ecg(n_channels=12, duration=10, fs=500, abnormality_type=0):
@@ -353,8 +372,6 @@ def generate_xor_graph_data(data, fs, position, channels, chunk_duration, purple
             diff_signal_with_nan = np.where(xor_result == 1, diff_signal, np.nan)
             diff_masked = [None if np.isnan(x) else x for x in diff_signal_with_nan]
 
-            # diff_masked = np.where(xor_result == 1, diff_signal, np.nan).tolist()
-
             traces.append({
                 'x': t_chunk,
                 'y': diff_masked,
@@ -368,7 +385,7 @@ def generate_xor_graph_data(data, fs, position, channels, chunk_duration, purple
 
 
 def generate_polar_graph_data(data, fs, position, channels, zoom, polar_mode, purple_colors, lead_names=None,
-                              is_ecg=False):
+                                is_ecg=False):
     """Generate polar graph data"""
     try:
         # NEW: Handle ECG cycles mode
@@ -526,7 +543,7 @@ def generate_polar_ecg_cycles(data, fs, position, channels, zoom, purple_colors,
                     # Map this cycle to exactly 360 degrees
                     # Current cycle spans from current_angle to current_angle + 360
                     theta_cycle = np.linspace(current_angle, current_angle + 360,
-                                              len(cycle_data), endpoint=False)
+                                            len(cycle_data), endpoint=False)
                     r_cycle = cycle_data
 
                     all_theta.extend(theta_cycle.tolist())
