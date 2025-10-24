@@ -9,7 +9,7 @@
 
 ---
 
-##  Overview
+## 🚀 Overview
 
 **Signal Viewer** is an interactive multi-signal visualization and analysis platform designed for **medical**, **acoustic**, and **radiofrequency (RF)** signal exploration.  
 It combines **AI-driven abnormality detection**, advanced **multi-view visualization modes**, **sampling control**, and **real-time interactivity** — all in one professional tool.
@@ -19,32 +19,32 @@ It combines **AI-driven abnormality detection**, advanced **multi-view visualiza
 ## 🧠 Features
 
 <details>
-<summary> Medical Signals Viewer (ECG / EEG)</summary>
+<summary>🧩 Medical Signals Viewer (ECG / EEG)</summary>
 
 ### 🔍 Key Features:
 - **Multi-Channel Visualization** (supports ECG or EEG datasets)
  
 - **Dynamic Viewing Modes:**
-  1.  **Continuous-Time Viewer**  
+  1. 🕒 **Continuous-Time Viewer**  
      Default scrolling signal window with zoom, pan, and speed control  
      | ECG Viewer | EEG Viewer |
      |-------------|------------|
      | <img src="assests/con_ecg.png" width="300"/> | <img src="assests/con_eeg.png" width="300"/> |
 
 
-  2.  **XOR Graph Viewer**  
+  2. ⚡ **XOR Graph Viewer**  
      Visualizes differences between time chunks using XOR overlay  
      | ECG Viewer | EEG Viewer |
      |-------------|------------|
      | <img src="assests/xor_ecg.png" width="300"/> | <img src="assests/xor_eeg.png" width="300"/> |
 
-  3.  **Polar Graph Viewer**  
+  3. 🔵 **Polar Graph Viewer**  
      Maps signal magnitude vs. time in polar coordinates  
      | ECG Viewer | EEG Viewer |
      |-------------|------------|
      | <img src="assests/polar_ecg.png" width="300"/> | <img src="assests/polar_eeg.png" width="300"/> |
 
-  4.  **Recurrence Graph Viewer**  
+  4. 🧮 **Recurrence Graph Viewer**  
      Plots pairwise correlations between two channels  
      | ECG Viewer | EEG Viewer |
      |-------------|------------|
