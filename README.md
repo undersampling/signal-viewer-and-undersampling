@@ -32,19 +32,28 @@ It combines **AI-driven abnormality detection**, advanced **multi-view visualiza
 - **Dynamic Viewing Modes:**
   1. 🕒 **Continuous-Time Viewer**  
      Default scrolling signal window with zoom, pan, and speed control  
-     ![Continuous View Example](assets/continuous_view.gif)
+     | ECG Viewer | EEG Viewer |
+     |-------------|------------|
+     | <img src="assests/con_ecg.png" width="300"/> | <img src="assests/con_eeg.png" width="300"/> |
+
 
   2. ⚡ **XOR Graph Viewer**  
      Visualizes differences between time chunks using XOR overlay  
-     ![XOR Viewer](assets/xor_graph.png)
+     | ECG Viewer | EEG Viewer |
+     |-------------|------------|
+     | <img src="assests/xor_ecg.png" width="300"/> | <img src="assests/xor_eeg.png" width="300"/> |
 
   3. 🔵 **Polar Graph Viewer**  
      Maps signal magnitude vs. time in polar coordinates  
-     ![Polar Graph](assets/polar_plot.gif)
+     | ECG Viewer | EEG Viewer |
+     |-------------|------------|
+     | <img src="assests/polar_ecg.png" width="300"/> | <img src="assests/polar_eeg.png" width="300"/> |
 
   4. 🧮 **Recurrence Graph Viewer**  
      Plots pairwise correlations between two channels  
-     ![Recurrence Graph](assets/recurrence_graph.png)
+     | ECG Viewer | EEG Viewer |
+     |-------------|------------|
+     | <img src="assests/re_ecg.png" width="300"/> | <img src="assests/re_eeg.png" width="300"/> |
 
 ### 🎚️  Sampling Frequency Slider & Aliasing Demonstration
 
