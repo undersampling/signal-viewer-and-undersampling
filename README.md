@@ -23,12 +23,7 @@ It combines **AI-driven abnormality detection**, advanced **multi-view visualiza
 
 ### 🔍 Key Features:
 - **Multi-Channel Visualization** (supports ECG or EEG datasets)
-- **AI Abnormality Detection**  
-  Detects up to **4+ abnormalities** such as:
-  - Arrhythmia  
-  - Atrial Fibrillation  
-  - Seizure  
-  - Tachycardia  
+ 
 - **Dynamic Viewing Modes:**
   1. 🕒 **Continuous-Time Viewer**  
      Default scrolling signal window with zoom, pan, and speed control  
@@ -62,11 +57,10 @@ This feature demonstrates **under-sampling** and **aliasing effects** — showin
 
 #### Key Points:
 - Adjust sampling frequency in real time  
-- Observe waveform distortion and aliasing  
-- View corresponding change in **AI classification confidence**  
+- Observe waveform distortion and aliasing   
 - Compare original vs. under-sampled signal  
 
-![Aliasing Demo](assets/aliasing_demo.gif)
+![Aliasing Demo](assets/undersampling.gif)
 
 </details>
 
@@ -84,7 +78,6 @@ This feature demonstrates **under-sampling** and **aliasing effects** — showin
 
 ### 🚁 Drone Detection:
 - Analyze audio signals to **detect drone presence**
-- Trained **CNN / ResNet model** distinguishes drones from background sounds
 
 ![Drone Detection](assets/drone_detection.gif)
 
@@ -98,7 +91,7 @@ This allows users to explore **under-sampling** and **aliasing** effects on soun
 #### 🧩 Features:
 - Control and visualize different sampling frequencies  
 - Instantly hear the **aliasing artifacts** introduced by low sampling rates  
-- Observe the **impact on AI estimation** (velocity, frequency, or classification)  
+- Observe the **impact on AI estimation** (classification)  
 
 ---
 
@@ -114,10 +107,7 @@ Then, the system employs an **anti-aliasing algorithm/model** to **restore the o
 4. Apply the **anti-alias model** to recover clarity and restore natural voice quality  
 5. Compare “Before” and “After” both visually and audibly  
 
-#### 🧠 Anti-Alias Model:
-- Based on **low-pass filtering** and **interpolation-based resampling**
-- Uses **Fourier-domain reconstruction** or **AI-based enhancement**  
-- Output: Reconstructed voice approximating original pitch and tone  
+ 
 
 ![Voice Recovery](assets/voice_recovery.gif)
 
@@ -140,7 +130,7 @@ Then, the system employs an **anti-aliasing algorithm/model** to **restore the o
 
 ![SAR Signal Viewer](assets/sar_signal.png)
 
-> ℹ️ Note: Sampling slider is **not included** in RF Viewer (as per project requirements).
+
 </details>
 
 ---
