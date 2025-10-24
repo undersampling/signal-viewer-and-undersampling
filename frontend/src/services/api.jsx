@@ -189,4 +189,31 @@ export const apiService = {
       rec_ch_y: recChY,
       undersample_freq: undersampleFreq, // NEW
     }),
+    predictEegWithData: async (data, fs) => {
+    try {
+      const response = await axios.post('/api/eeg/predict/', {
+        data: data,
+        fs: fs
+      });
+      return response;
+    } catch (error) {
+      console.error('Error in predictEegWithData:', error);
+      throw error;
+    }
+  },
+
+  // ECG prediction with custom data
+  predictEcgWithData: async (data, fs) => {
+    try {
+      const response = await axios.post('/api/ecg/predict/', {
+        data: data,
+        fs: fs
+      });
+      return response;
+    } catch (error) {
+      console.error('Error in predictEcgWithData:', error);
+      throw error;
+    }
+  },
 };
+export default apiService;

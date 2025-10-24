@@ -9,6 +9,7 @@ export default function SignalViewer({ isECG = false }) {
   const [viewerType, setViewerType] = useState("continuous");
   const [loading, setLoading] = useState(false);
   const [prediction, setPrediction] = useState(null);
+  const [undersampledPrediction, setUndersampledPrediction] = useState(null);
   const [playing, setPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -31,25 +32,47 @@ export default function SignalViewer({ isECG = false }) {
 
   const maxChannels = isECG ? 12 : 8;
   const leadNames = isECG
-    ? [
-        "I",
-        "II",
-        "III",
-        "aVR",
-        "aVL",
-        "aVF",
-        "V1",
-        "V2",
-        "V3",
-        "V4",
-        "V5",
-        "V6",
-      ]
+    ? ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
     : Array.from({ length: 19 }, (_, i) => `Ch ${i + 1}`);
 
   const API = isECG ? apiService.ecgDemo : apiService.eegDemo;
   const uploadAPI = isECG ? apiService.ecgUpload : apiService.eegUpload;
   const graphAPI = isECG ? apiService.ecgGraph : apiService.eegGraph;
+
+  // FIXED: Function to get undersampled prediction for BOTH EEG and ECG
+  const getUndersampledPrediction = async (data, originalFs, targetFs) => {
+    // REMOVED the isECG check here
+    if (!targetFs || targetFs >= originalFs) {
+      setUndersampledPrediction(null);
+      return;
+    }
+
+    try {
+      console.log(`Getting ${isECG ? 'ECG' : 'EEG'} prediction for undersampled data (${targetFs}Hz)...`);
+      
+      // Apply undersampling on frontend
+      const decimationFactor = Math.floor(originalFs / targetFs);
+      const undersampledData = data.map(channel => 
+        channel.filter((_, idx) => idx % decimationFactor === 0)
+      );
+
+      // Call appropriate API based on signal type
+      const response = isECG
+        ? await apiService.predictEcgWithData(undersampledData, targetFs)
+        : await apiService.predictEegWithData(undersampledData, targetFs);
+
+      if (response.data) {
+        setUndersampledPrediction({
+          label: response.data.status,
+          confidence: response.data.confidence,
+        });
+        console.log(`✅ Undersampled ${isECG ? 'ECG' : 'EEG'} prediction:`, response.data.status, `(${(response.data.confidence * 100).toFixed(1)}%)`);
+      }
+    } catch (error) {
+      console.error(`❌ Error getting undersampled ${isECG ? 'ECG' : 'EEG'} prediction:`, error);
+      setUndersampledPrediction(null);
+    }
+  };
 
   // Load demo data
   const loadDemoData = async () => {
@@ -60,20 +83,22 @@ export default function SignalViewer({ isECG = false }) {
       console.log("Demo data loaded:", response.data);
       setSignalData(response.data);
       setDisplayedFs(response.data.fs);
+      
       setPrediction({
-        // *** MODIFIED: Use the full 'status' text for the label ***
         label: response.data.status,
         confidence: response.data.confidence,
       });
+      
       setPosition(0);
       setChannels(
         Array.from(
-          {
-            length: Math.min(4, response.data.channels || response.data.leads),
-          },
+          { length: Math.min(4, response.data.channels || response.data.leads) },
           (_, i) => i
         )
       );
+      
+      setUndersampledPrediction(null);
+      setUndersampleFreq(null);
     } catch (error) {
       console.error("Error loading demo:", error);
       setError("Error loading demo data: " + error.message);
@@ -94,20 +119,22 @@ export default function SignalViewer({ isECG = false }) {
       console.log("File uploaded:", response.data);
       setSignalData(response.data);
       setDisplayedFs(response.data.fs);
+      
       setPrediction({
-        // *** MODIFIED: Use the full 'status' text for the label ***
         label: response.data.status,
         confidence: response.data.confidence,
       });
+      
       setPosition(0);
       setChannels(
         Array.from(
-          {
-            length: Math.min(4, response.data.channels || response.data.leads),
-          },
+          { length: Math.min(4, response.data.channels || response.data.leads) },
           (_, i) => i
         )
       );
+      
+      setUndersampledPrediction(null);
+      setUndersampleFreq(null);
     } catch (error) {
       console.error("Error uploading file:", error);
       setError("Error uploading file: " + error.message);
@@ -182,7 +209,6 @@ export default function SignalViewer({ isECG = false }) {
       setSignalData(response.data);
       setDisplayedFs(response.data.fs);
       setPrediction({
-        // *** MODIFIED: Use the full 'status' text for the label ***
         label: response.data.status,
         confidence: response.data.confidence,
       });
@@ -190,6 +216,8 @@ export default function SignalViewer({ isECG = false }) {
       setChannels(
         Array.from({ length: Math.min(4, response.data.leads) }, (_, i) => i)
       );
+      setUndersampledPrediction(null);
+      setUndersampleFreq(null);
     } catch (error) {
       console.error("Error uploading WFDB:", error);
       setError("Error uploading WFDB files: " + error.message);
@@ -198,6 +226,19 @@ export default function SignalViewer({ isECG = false }) {
       setLoading(false);
     }
   };
+
+  // FIXED: Effect to update undersampled prediction for BOTH EEG and ECG
+  useEffect(() => {
+    if (!signalData) return; // REMOVED isECG check
+
+    if (undersampleFreq && undersampleFreq < signalData.fs) {
+      console.log(`🔄 Triggering prediction update: ${signalData.fs}Hz → ${undersampleFreq}Hz`);
+      getUndersampledPrediction(signalData.data, signalData.fs, undersampleFreq);
+    } else {
+      console.log(`🔄 Clearing undersampled prediction (freq: ${undersampleFreq})`);
+      setUndersampledPrediction(null);
+    }
+  }, [undersampleFreq, signalData]); // Removed isECG from dependencies
 
   // Update graph
   useEffect(() => {
@@ -208,15 +249,6 @@ export default function SignalViewer({ isECG = false }) {
 
     const updateGraph = async () => {
       try {
-        console.log("Updating graph with params:", {
-          viewerType,
-          position,
-          zoom,
-          channels,
-          undersampleFreq,
-          polarMode,
-        });
-
         const response = await graphAPI(
           signalData.data,
           signalData.fs,
@@ -232,20 +264,10 @@ export default function SignalViewer({ isECG = false }) {
           undersampleFreq
         );
 
-        console.log("Graph response:", response.data);
-
         if (response.data && response.data.traces) {
           setGraphData(response.data.traces);
           setCurrentTime(response.data.current_time);
 
-          if (response.data.prediction_status !== undefined) {
-            setPrediction({
-              label: response.data.prediction_status,
-              confidence: response.data.prediction_confidence,
-            });
-          }
-
-          // *** NEW: Update displayed FS from graph response ***
           if (response.data.new_fs !== undefined) {
             setDisplayedFs(response.data.new_fs);
           }
@@ -256,7 +278,6 @@ export default function SignalViewer({ isECG = false }) {
         }
       } catch (error) {
         console.error("Error updating graph:", error);
-        console.error("Error details:", error.response?.data);
         setError(
           "Error updating graph: " +
             (error.response?.data?.error || error.message)
@@ -303,9 +324,6 @@ export default function SignalViewer({ isECG = false }) {
           <h1>
             <i className={isECG ? "fas fa-heart-pulse" : "fas fa-brain"}></i>
             {isECG ? "ECG" : "EEG"} Multi-Channel Viewer & Analyzer
-          </h1>
-          <h1 className="page-title">
-            {/* Advanced signal processing and analysis platform */}
           </h1>
         </div>
 
@@ -354,14 +372,14 @@ export default function SignalViewer({ isECG = false }) {
               <button
                 onClick={handleWFDBUpload}
                 disabled={loading}
-                className="btn "
+                className="btn"
               >
                 <i className="fas fa-check-circle"></i> Load WFDB Files
               </button>
             </div>
           )}
 
-          <button onClick={loadDemoData} disabled={loading} className="btn ">
+          <button onClick={loadDemoData} disabled={loading} className="btn">
             <i className={isECG ? "fas fa-heartbeat" : "fas fa-flask"}></i>
             {loading ? "Loading..." : `Load Demo ${isECG ? "ECG" : "EEG"} Data`}
           </button>
@@ -394,18 +412,66 @@ export default function SignalViewer({ isECG = false }) {
         </div>
       )}
 
-      {prediction && (
-        <div className="prediction-card">
-          <div className="prediction-content">
-            <i className="fas fa-check-circle"></i>
-            <div>
-              <h3>AI Analysis Complete</h3>
-              <p>Status: {prediction.label}</p>
-              <p>Confidence: {(prediction.confidence * 100).toFixed(1)}%</p>
+      {/* FIXED: Display predictions side by side for both EEG and ECG */}
+      <div style={{ 
+        display: "grid", 
+        gridTemplateColumns: undersampledPrediction ? "1fr 1fr" : "1fr",
+        gap: "15px",
+        marginBottom: "20px"
+      }}>
+        {prediction && (
+          <div className="prediction-card" style={{ 
+            borderLeft: undersampledPrediction ? "4px solid #667eea" : "4px solid #4CAF50"
+          }}>
+            <div className="prediction-content">
+              <i className="fas fa-check-circle"></i>
+              <div>
+                <h3>
+                  {undersampledPrediction 
+                    ? `📊 Original ${isECG ? 'ECG' : 'EEG'} Data` 
+                    : "AI Analysis Complete"}
+                </h3>
+                <p><strong>Status:</strong> {prediction.label}</p>
+                <p><strong>Confidence:</strong> {(prediction.confidence * 100).toFixed(1)}%</p>
+                {undersampledPrediction && (
+                  <p style={{ fontSize: "0.85em", color: "#666", marginTop: "5px" }}>
+                    Sampling Rate: {signalData.fs} Hz
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {undersampledPrediction && (
+          <div className="prediction-card" style={{ 
+            borderLeft: "4px solid #4facfe",
+            background: "linear-gradient(135deg, #f5f7ff 0%, #e8f0ff 100%)"
+          }}>
+            <div className="prediction-content">
+              <i className="fas fa-chart-line"></i>
+              <div>
+                <h3>🔬 Undersampled {isECG ? 'ECG' : 'EEG'} Data</h3>
+                <p><strong>Status:</strong> {undersampledPrediction.label}</p>
+                <p><strong>Confidence:</strong> {(undersampledPrediction.confidence * 100).toFixed(1)}%</p>
+                <p style={{ fontSize: "0.85em", color: "#666", marginTop: "5px" }}>
+                  Sampling Rate: {displayedFs} Hz
+                </p>
+                {prediction.label !== undersampledPrediction.label && (
+                  <p style={{ 
+                    fontSize: "0.85em", 
+                    color: "#ff6b6b", 
+                    marginTop: "8px",
+                    fontWeight: "600"
+                  }}>
+                    ⚠️ Prediction changed due to undersampling!
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="stats-grid">
         <div className="stat-card">
@@ -428,7 +494,6 @@ export default function SignalViewer({ isECG = false }) {
           <i className="fas fa-tachometer-alt"></i>
           <div className="stat-content">
             <div className="stat-value">
-              {/* *** MODIFIED: Use displayedFs *** */}
               {displayedFs || signalData.fs} Hz
             </div>
             <div className="stat-label">Sampling Rate</div>
@@ -512,6 +577,15 @@ export default function SignalViewer({ isECG = false }) {
           <div className="slider-group">
             <label>
               Nyquist Undersampling: {displayedFs || signalData.fs} Hz
+              {undersampledPrediction && (
+                <span style={{ 
+                  color: "#4facfe", 
+                  fontSize: "0.85em", 
+                  marginLeft: "8px" 
+                }}>
+                  (Prediction Updated)
+                </span>
+              )}
             </label>
             <input
               type="range"
@@ -521,9 +595,7 @@ export default function SignalViewer({ isECG = false }) {
               value={undersampleFreq || signalData.fs}
               onChange={(e) => {
                 const val = parseInt(e.target.value);
-                // *** NEW: Immediately update displayedFs for a responsive slider ***
                 setDisplayedFs(val);
-                // Set to null if it's back to the original value
                 setUndersampleFreq(val === signalData.fs ? null : val);
               }}
             />

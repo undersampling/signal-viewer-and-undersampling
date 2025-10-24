@@ -60,8 +60,8 @@ class EEGDemoView(APIView):
                 'error': str(e),
                 'success': False
             }, status=400)
-
-
+        
+        
 class EEGUploadView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
@@ -424,6 +424,80 @@ class ECGGraphView(APIView):
             import traceback
             print("=== ERROR in ECGGraphView ===")
             print(traceback.format_exc())
+            return Response({
+                'error': str(e),
+                'success': False
+            }, status=400)
+class ECGPredictView(APIView):
+    """Endpoint for getting predictions on processed/undersampled ECG data"""
+    def post(self, request):
+        try:
+            print("=== ECG Prediction Request ===")
+            data = request.data.get('data')
+            fs = request.data.get('fs')
+            
+            if data is None or fs is None:
+                return Response({'error': 'Missing data or fs parameter'}, status=400)
+            
+            # Convert to numpy array
+            data = np.array(data)
+            print(f"Prediction input - Data shape: {data.shape}, FS: {fs}")
+            
+            # Run prediction on the provided data
+            pred, conf = predict_ecg_abnormality(data)
+            status_text = ECG_ABNORMALITY_TYPES.get(pred, pred)
+            
+            print(f"✅ ECG Prediction result: {pred} ({conf:.2%})")
+            
+            return Response({
+                'prediction': pred,
+                'confidence': float(conf),
+                'status': status_text,
+                'fs': int(fs),
+                'success': True
+            })
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({
+                'error': str(e),
+                'success': False
+            }, status=400)
+        
+
+class EEGPredictView(APIView):
+    """Endpoint for getting predictions on processed/undersampled EEG data"""
+    def post(self, request):
+        try:
+            print("=== EEG Prediction Request ===")
+            data = request.data.get('data')
+            fs = request.data.get('fs')
+            
+            if data is None or fs is None:
+                return Response({'error': 'Missing data or fs parameter'}, status=400)
+            
+            # Convert to numpy array
+            data = np.array(data)
+            print(f"Prediction input - Data shape: {data.shape}, FS: {fs}")
+            
+            # Run prediction on the provided data
+            pred, conf = predict_eeg_abnormality(data)
+            status_text = EEG_ABNORMALITY_TYPES.get(pred, pred)
+            
+            print(f"✅ EEG Prediction result: {pred} ({conf:.2%})")
+            
+            return Response({
+                'prediction': pred,
+                'confidence': float(conf),
+                'status': status_text,
+                'fs': int(fs),
+                'success': True
+            })
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
             return Response({
                 'error': str(e),
                 'success': False

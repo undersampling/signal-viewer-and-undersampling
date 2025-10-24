@@ -6,6 +6,8 @@ from .views.drone_views import DroneDetectionView, WaveformChunkView
 from .views.doppler_views import upload_doppler, generate_doppler, simulate_passing, predict_doppler 
 from .views.sar_views import upload_sar
 from .views.audio import downsample_audio
+from .views.ecg_views import ECGPredictView,EEGPredictView
+
 
 # --- IMPORT THE NEW VIEW ---
 from .views.correction_aliasing import correct_aliasing_view
@@ -51,4 +53,9 @@ urlpatterns = [
     path('ecg/upload/', ECGUploadView.as_view(), name='ecg-upload'),
     path('ecg/wfdb/', ECGWFDBUploadView.as_view(), name='ecg-wfdb-upload'),
     path('ecg/graph/', ECGGraphView.as_view(), name='ecg-graph'),
+
+
+    # ... existing patterns ...
+    path('ecg/predict/', ECGPredictView.as_view(), name='ecg-predict'),
+    path('eeg/predict/', EEGPredictView.as_view(), name='eeg-predict'),
 ]
