@@ -18,8 +18,7 @@ It combines **AI-driven abnormality detection**, advanced **multi-view visualiza
 
 ## 🧠 Features
 
-<details>
-<summary>🧩 Medical Signals Viewer (ECG / EEG)</summary>
+### 🧩 Medical Signals Viewer (ECG / EEG)
 
 ### 🔍 Key Features:
 - **Multi-Channel Visualization** (supports ECG or EEG datasets)
@@ -62,7 +61,7 @@ This feature demonstrates **under-sampling** and **aliasing effects** — showin
 
 ![Aliasing Demo](assests/undersampling.gif)
 
-</details>
+
 
 ---
 
