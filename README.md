@@ -151,7 +151,7 @@ Then, the system employs an **anti-aliasing algorithm/model** to **restore the o
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/signal-viewer.git
+git clone https://github.com/undersampling/signal-viewer-and-undersampling.git
 cd signal-viewer
 
 # Backend setup
