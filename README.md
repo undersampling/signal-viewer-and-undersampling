@@ -141,7 +141,7 @@ Then, the system employs an **anti-aliasing algorithm/model** to **restore the o
 
 | Component | Technology |
 |------------|-------------|
-| **Frontend** | React + TailwindCSS + Plotly.js |
+| **Frontend** | React + Plotly.js |
 | **Backend / Processing** | Python (Django) |
 | **Signal Processing** | NumPy, SciPy, PyWavelets |
 | **AI / ML** | TensorFlow / PyTorch |
