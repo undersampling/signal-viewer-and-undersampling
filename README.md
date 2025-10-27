@@ -65,8 +65,7 @@ This feature demonstrates **under-sampling** and **aliasing effects** — showin
 
 ---
 
-<details>
-<summary>🔊 Acoustic Signals Viewer (Doppler & Voice Analysis)</summary>
+### 🔊 Acoustic Signals Viewer (Doppler & Voice Analysis)
 
 ### 🚗 Vehicle-Passing Doppler Effect:
 - Generate the **expected sound** of a car passing with velocity `v` and horn frequency `f`
@@ -112,12 +111,11 @@ Then, the system employs an **anti-aliasing algorithm/model** to **restore the o
 
 ---
 
-</details>
+
 
 ---
 
-<details>
-<summary>📡 Radiofrequency (RF) Signals Viewer (SAR Analysis)</summary>
+### 📡 Radiofrequency (RF) Signals Viewer (SAR Analysis)
 
 ### SAR Signal Analysis:
 - Import and visualize **RF/SAR waveforms**
@@ -130,7 +128,6 @@ Then, the system employs an **anti-aliasing algorithm/model** to **restore the o
 ![SAR Signal Viewer](assets/sar_signal.png)
 
 
-</details>
 
 ---
 
