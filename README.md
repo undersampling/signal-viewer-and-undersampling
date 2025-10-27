@@ -1,11 +1,5 @@
 # 🩺 Signal Viewer pro
 
-![GitHub repo size](https://img.shields.io/github/repo-size/your-username/signal-viewer?color=blue)
-![GitHub contributors](https://img.shields.io/github/contributors/your-username/signal-viewer)
-![GitHub stars](https://img.shields.io/github/stars/your-username/signal-viewer?style=social)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Python](https://img.shields.io/badge/Python-3.11%2B-blue)
-![React](https://img.shields.io/badge/Frontend-React%20%2B%20Plotly-ff69b4)
 
 ---
 
