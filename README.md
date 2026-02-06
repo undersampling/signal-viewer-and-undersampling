@@ -1,5 +1,6 @@
 # 🩺 Signal Viewer pro
 
+[Watch website Demo](https://drive.google.com/file/d/1CbmBt6gSrlI7VPEfN38NE8wMkQFjN7Nj/view?usp=sharing)
 
 ---
 
@@ -66,12 +67,15 @@ This feature demonstrates **under-sampling** and **aliasing effects** — showin
 - Real-time **adjustable controls** for `v` and `f`
 - Load real Doppler sound recordings and use AI to **estimate velocity and frequency**
 
-![Doppler Simulation](assets/doppler_effect.gif)
+🎥 [Watch Doppler Simulation Demo (Google Drive)](https://drive.google.com/file/d/1Z2J3GaMSkyig-3OnqH8gpk2OzAD_r3lI/view?usp=drive_link)
+
+
+![Doppler Simulation](assests/doppler_effect.gif)
 
 ### 🚁 Drone Detection:
 - Analyze audio signals to **detect drone presence**
 
-![Drone Detection](assets/drone_detection.gif)
+![Drone Detection](assests/drone_detection.gif)
 
 ---
 
@@ -92,6 +96,8 @@ This allows users to explore **under-sampling** and **aliasing** effects on soun
 New functionality allows users to **open an arbitrary human voice file** and analyze how **under-sampling distorts** the audio.  
 Then, the system employs an **anti-aliasing algorithm/model** to **restore the original voice**.
 
+🎥 [Watch human audio Demo (Google Drive)](https://drive.google.com/file/d/1CkS5zn25zo_JfCDCjAiGx2N1D-afXmg_/view?usp=sharing)
+
 #### 🧩 Process:
 1. Load a `.wav` or `.mp3` voice file  
 2. Reduce its sampling rate using the slider  
@@ -101,7 +107,7 @@ Then, the system employs an **anti-aliasing algorithm/model** to **restore the o
 
  
 
-![Voice Recovery](assets/voice_recovery.gif)
+![Voice Recovery](assests/voice_recovery.gif)
 
 ---
 
@@ -119,7 +125,7 @@ Then, the system employs an **anti-aliasing algorithm/model** to **restore the o
   - Phase shift  
 - Supports both **time-domain** and **spectrum-domain** visualization  
 
-![SAR Signal Viewer](assets/sar_signal.png)
+![SAR Signal Viewer](assests/sar_signal.gif)
 
 
 
@@ -156,3 +162,4 @@ pip install -r requirements.txt
 cd ../frontend
 npm install
 npm run dev
+
